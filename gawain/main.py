@@ -10,34 +10,39 @@ import sys
 import os
 import time
 
-import progressbar
+
+
 import gawain.io as io
 import gawain.numerics as nu
 
 
-preamble =
-
-
-'  ______                     _      \n
-  / ____/___ __      ______ _(_)___  \n
- / / __/ __ `/ | /| / / __ `/ / __ \ \n
-/ /_/ / /_/ /| |/ |/ / /_/ / / / / / \n
-\____/\__,_/ |__/|__/\__,_/_/_/ /_/  \n'
-
-
+preamble = """
+   ______                     _
+  / ____/___ __      ______ _(_)___
+ / / __/ __ `/ | /| / / __ `/ / __ |
+/ /_/ / /_/ /| |/ |/ / /_/ / / / / /
+\____/\__,_/ |__/|__/\__,_/_/_/ /_/
+-----------------------------------
+      R-MHD simulation code
+-----------------------------------
+Simulation parameters:
+"""
 
 
 def main():
 
     print(preamble)
 
+    start_time =  time.process_time()
+
     input_file = str(sys.argv[1])
     params = io.Parameters(input_file)
+    params.print_params()
     clock = nu.Clock(params)
     solution = nu.SolutionVector(params)
 
     while not clock.is_end():
-        dt = clock.calculate_timestep()
+        dt = clock.calculate_timestep(solution)
         solution.calculate_fluxes()
         solution.update(dt)
 
@@ -46,7 +51,9 @@ def main():
 
         clock.update()
 
-    print('Simulation Complete')
+    end_time = time.process_time()
+
+    print('\nSimulation Complete, duration:', end_time-start_time, 'seconds')
 
 
 
