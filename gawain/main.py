@@ -7,10 +7,6 @@
 '''
 
 import sys
-import os
-import time
-
-
 
 import gawain.io as io
 import gawain.numerics as nu
@@ -33,27 +29,24 @@ def main():
 
     print(preamble)
 
-    start_time =  time.process_time()
-
     input_file = str(sys.argv[1])
     params = io.Parameters(input_file)
     params.print_params()
     clock = nu.Clock(params)
     solution = nu.SolutionVector(params)
+    output = io.Output(params, solution)
 
     while not clock.is_end():
         dt = clock.calculate_timestep(solution)
-        solution.calculate_fluxes()
         solution.update(dt)
 
         if clock.is_output():
-            io.output_data(solution)
+            output.dump(solution)
 
-        clock.update()
+        clock.tick()
 
-    end_time = time.process_time()
 
-    print('\nSimulation Complete, duration:', end_time-start_time, 'seconds')
+    print('\nSimulation Complete, duration:', clock.duration(), 'seconds')
 
 
 
