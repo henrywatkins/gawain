@@ -2,7 +2,7 @@
 
 import time
 
-from progressbar import ProgressBar
+from tqdm import tqdm
 
 from gawain.physics import FluxCalculator
 
@@ -14,7 +14,7 @@ class Clock:
         self.timestep = 0.001
         self.next_output_time = 0.0
         self.output_spacing = self.end_time/Parameters.n_outputs
-        self.bar = ProgressBar(max_value=self.end_time)
+        self.bar = tqdm(total=self.end_time)
         self.wallclock_start = time.process_time()
 
     def is_end(self):
@@ -63,13 +63,34 @@ class Integrator:
         self.lagged_solution = solution_data
         self.fluxer = FluxCalculator(cell_sizes)
 
+    def Richtmyer(self, solution_data, h):
+        mid_flux_x = fluxer.x_flux(solution_data)
+        pre_flux_x = fluxer.x_flux
 
+
+
+class PredictorCorrectorIntegrator(Integrator):
+    def __init__(self):
+        pass
+    def predictor_corrector(self, solution_data, h):
+        intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
+        intermediate_solution = solution_data + h*intermediate_flux
+        final_flux = self.fluxer.calculate_fluxes(intermediate_solution, h)
+        solution_data += 0.5*h*(intermediate_flux + final_flux)
+
+class LeapFrogIntegrator(Integrator):
+    def __init__(self):
+        pass
     def leapfrog(self, solution_data, h):
         dummy = solution_data
         intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
         solution_data = self.lagged_solution+h*intermediate_flux
         self.lagged_solution = dummy
+        return 
 
+class RK2Integrator(Integrator):
+    def __init__(self):
+        pass
     def RK2(self, solution_data, h):
         k1 = self.fluxer.calculate_fluxes(solution_data, h)
         k1 *= h
@@ -78,17 +99,7 @@ class Integrator:
         solution_data += 0.333*k1 + 0.666*k2
 
         return solution_data
-
-    def RKL2(self, solution_data, h):
+        
+class BoundaryConditions:
+    def __init__(self):
         pass
-
-    def Richtmyer(self, solution_data, h):
-        mid_flux_x = fluxer.x_flux(solution_data)
-        pre_flux_x = fluxer.x_flux
-
-
-    def predictor_corrector(self, solution_data, h):
-        intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
-        intermediate_solution = solution_data + h*intermediate_flux
-        final_flux = self.fluxer.calculate_fluxes(intermediate_solution, h)
-        solution_data += 0.5*h*(intermediate_flux + final_flux)

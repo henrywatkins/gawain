@@ -30,7 +30,7 @@ def main():
     print(preamble)
 
     input_file = str(sys.argv[1])
-    params = io.Parameters(input_file)
+    params = io.Parameters(from_file=input_file)
     params.print_params()
     clock = nu.Clock(params)
     solution = nu.SolutionVector(params)

@@ -1,7 +1,7 @@
 ''' Input and Output utilities '''
 
 import os
-from importlib import import_module
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +15,13 @@ class Output:
     def __init__(self, Parameters, SolutionVector):
         self.dump_no = 0
         self.save_dir = 'output/'+str(Parameters.run_name)
-        os.mkdir(self.save_dir)
+        try:
+            os.mkdir(self.save_dir)
+        except:
+            new_name = self.save_dir+"_new"
+            print('A run folder with that name already exists, changing directory name to ',new_name)
+            self.save_dir = new_name
+            os.mkdir(self.save_dir)
         self.dump(SolutionVector)
 
     def dump(self, SolutionVector):
@@ -27,27 +33,46 @@ class Output:
 
 
 class Parameters:
-    def __init__(self, input_file):
-        self.input_module = import_module('tests.'+input_file)
-        self.cfl = self.input_module.cfl
-        self.mesh_shape = self.input_module.mesh_shape
-        self.mesh_size = self.input_module.mesh_size
-        self.t_max = self.input_module.t_max
-        self.n_outputs = self.input_module.n_outputs
-        self.with_gpu = self.input_module.with_gpu
-        self.initial_condition = self.input_module.initial_condition
-        self.boundary_conditions = self.input_module.boundary_conditions
-        self.run_name = self.input_module.run_name
+    def __init__(self, from_file=None):
+        self.run_name = None
+        self.cfl = None
+        self.mesh_shape = None
+        self.mesh_size = None
+        self.t_max = None
+        self.n_outputs = None
+        self.with_gpu = False
+        self.initial_condition = None
+        self.boundary_conditions = None
+        self.cell_sizes = None
+        
+        if from_file is not None:
+            with open(from_file, 'rb') as input:
+                input_dict = pickle.load(input)
+                self.set_parameters(input_dict)
+        else:
+            print('Invalid or missing input file, please specify parameters')
+            
+    def set_parameters(self, dict_input):
+        self.cfl = dict_input['clf']
+        self.mesh_shape = dict_input['mesh_shape']
+        self.mesh_size = dict_input['mesh_size']
+        self.t_max = dict_input['t_max']
+        self.n_outputs = dict_input['n_dumps']
+        self.with_gpu = dict_input['using_gpu']
+        self.initial_condition = dict_input['initial_con']
+        self.boundary_conditions = dict_input['bound_cons']
+        self.run_name = dict_input['run_name']
         self.cell_sizes = (self.mesh_size[0]/self.mesh_shape[0],
                            self.mesh_size[1]/self.mesh_shape[1],
                            self.mesh_size[2]/self.mesh_shape[2])
+        
 
     def print_params(self):
         print('run name: ', self.run_name)
         print('clf condition =', self.cfl)
         print('nx, ny, nz =', self.mesh_shape)
         print('lx, ly, lz =', self.mesh_size)
-        print('t-max=', self.t_max)
+        print('t max =', self.t_max)
         print('-----------------------------------')
 
 

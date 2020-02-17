@@ -1,0 +1,11 @@
+README.md
+setup.py
+gawain/__init__.py
+gawain/io.py
+gawain/main.py
+gawain/numerics.py
+gawain/physics.py
+gawain.egg-info/PKG-INFO
+gawain.egg-info/SOURCES.txt
+gawain.egg-info/dependency_links.txt
+gawain.egg-info/top_level.txt

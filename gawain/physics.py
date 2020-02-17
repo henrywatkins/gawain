@@ -13,7 +13,19 @@ class FluxCalculator:
         #total_flux += (y_plus_flux - y_minus_flux)/self.cell_sizes[1]
         return total_flux
 
-    def lax_friedrichs(self, solution_data, dt):
+    def x_flux(self, vector):
+        return 0.1*vector
+
+    def y_flux(self, vector):
+        return 0.0*vector
+        
+class HLLFluxer(FluxCalculator):
+    def __init__(self):
+        pass
+        
+class LaxFriedrichsFluxer(FluxCalculator):
+
+   def lax_friedrichs(self, solution_data, dt):
 
         # using periodic conditions for now
         shifted_left = np.roll(solution_data, -1, axis=0)
@@ -36,6 +48,9 @@ class FluxCalculator:
 
         return x_plus_flux, x_minus_flux, y_plus_flux, y_minus_flux
 
+
+class MUSCLFluxer(FluxCalculator):
+
     def MUSCL(self, solution_data, dt):
 
         # using periodic conditions for now
@@ -56,15 +71,3 @@ class FluxCalculator:
         y_plus_flux = self.y_flux(reconstruct_y_top)
 
         return x_plus_flux, x_minus_flux, y_plus_flux, y_minus_flux
-
-
-    def x_flux(self, vector):
-        return 0.1*vector
-
-    def y_flux(self, vector):
-        return 0.0*vector
-
-
-class BoundaryConditions:
-    def __init__(self):
-        pass
