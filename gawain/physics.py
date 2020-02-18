@@ -6,11 +6,10 @@ class FluxCalculator:
     def __init__(self, cell_sizes):
         self.cell_sizes = cell_sizes
 
-    def calculate_fluxes(self, solution_data, dt):
+    def calculate_fluxes(self, solution_data):
 
-        x_plus_flux, x_minus_flux, y_plus_flux, y_minus_flux = self.MUSCL(solution_data, dt)
+        x_plus_flux, x_minus_flux = 2., 1.
         total_flux = (x_plus_flux - x_minus_flux)/self.cell_sizes[0]
-        #total_flux += (y_plus_flux - y_minus_flux)/self.cell_sizes[1]
         return total_flux
 
     def x_flux(self, vector):

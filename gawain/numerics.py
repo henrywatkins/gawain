@@ -43,7 +43,6 @@ class Clock:
     def calculate_timestep(self, SolutionVector):
 
         dt = 0.01
-
         self.timestep = dt
         return dt
 
@@ -51,10 +50,11 @@ class Clock:
 class SolutionVector:
     def __init__(self, Parameters):
         self.data = Parameters.initial_condition
-        self.integrate = Integrator(self.data, Parameters.cell_sizes)
-
+        #self.integrator = PredictorCorrectorIntegrator(self.data, Parameters.cell_sizes)
+        self.integrator = Integrator(self.data, Parameters.cell_sizes)
+        
     def update(self, delta):
-        self.data = self.integrate.RK2(self.data, delta)
+        self.data = self.integrator.integrate(self.data, delta)
 
 
 
@@ -63,15 +63,15 @@ class Integrator:
         self.lagged_solution = solution_data
         self.fluxer = FluxCalculator(cell_sizes)
 
-    def Richtmyer(self, solution_data, h):
-        mid_flux_x = fluxer.x_flux(solution_data)
-        pre_flux_x = fluxer.x_flux
-
+    def integrate(self, solution_data, time_step):
+        rhs = self.fluxer.calculate_fluxes(solution_data)
+        return solution_data + time_step*rhs
 
 
 class PredictorCorrectorIntegrator(Integrator):
-    def __init__(self):
-        pass
+    def __init__(self, solution_data, cell_sizes):
+        super(PredictorCorrectorIntegrator, self).__init__(solution_data, cell_sizes)
+        
     def predictor_corrector(self, solution_data, h):
         intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
         intermediate_solution = solution_data + h*intermediate_flux
@@ -80,7 +80,8 @@ class PredictorCorrectorIntegrator(Integrator):
 
 class LeapFrogIntegrator(Integrator):
     def __init__(self):
-        pass
+        super(LeapFrogIntegrator, self).__init__()
+        
     def leapfrog(self, solution_data, h):
         dummy = solution_data
         intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
@@ -90,7 +91,8 @@ class LeapFrogIntegrator(Integrator):
 
 class RK2Integrator(Integrator):
     def __init__(self):
-        pass
+        super(RK2Integrator, self).__init__()
+        
     def RK2(self, solution_data, h):
         k1 = self.fluxer.calculate_fluxes(solution_data, h)
         k1 *= h

@@ -7,9 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib import rc
-import h5py
-
 from matplotlib import rcParams
+import h5py
 
 class Output:
     def __init__(self, Parameters, SolutionVector):
@@ -18,9 +17,12 @@ class Output:
         try:
             os.mkdir(self.save_dir)
         except:
-            new_name = self.save_dir+"_new"
-            print('A run folder with that name already exists, changing directory name to ',new_name)
-            self.save_dir = new_name
+            
+            #new_name = self.save_dir+"_new"
+            Parameters.run_name += "_new"
+            new_name = Parameters.run_name
+            print('A run folder with that name already exists, changing directory name to ', new_name)
+            self.save_dir = 'output/'+str(Parameters.run_name)
             os.mkdir(self.save_dir)
         self.dump(SolutionVector)
 
