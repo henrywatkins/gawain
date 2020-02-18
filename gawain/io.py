@@ -92,7 +92,7 @@ class Reader:
 
     def plot(self, variable, timesteps=[0], save_as=None):
         if len(self.data.shape)==2:
-            fig, ax = plt.figure()
+            fig, ax = plt.subplots()
             ax.set_title('Plot of '+variable)
             ax.set_xlim(0, 100)
             ax.set_ylim(0, 1)
