@@ -3,6 +3,7 @@
 import time
 
 from tqdm import tqdm
+import numpy as np
 
 from gawain.physics import FluxCalculator
 
@@ -54,7 +55,7 @@ class SolutionVector:
         #self.integrator = Integrator(self.data, Parameters.cell_sizes)
         self.integrator = LeapFrogIntegrator(self.data, Parameters.cell_sizes)
         #self.integrator = RK2Integrator(self.data, Parameters.cell_sizes)
-        self.boundary_condition = BoundaryConditions(Parameters)
+        self.boundary_condition = Parameters.boundary_conditions
     
     def set_centroid(self, array):
         self.data = array
@@ -65,16 +66,20 @@ class SolutionVector:
     def plusX(self):
         """ returns data shifted i+1
         """
-        pass
+        if self.boundary_condition[0]=="periodic":
+            return np.roll(self.data, 1)
     
     def minusX(self):
         """ returns data shifted i-1
         """
-        pass
+        if self.boundary_condition[0]=="periodic":
+            return np.roll(self.data, -1)
+        
     def plusY(self):
         """ returns data shifted j+1
         """
         pass
+        
     def minusY(self):
         """ returns data shifted j-1
         """

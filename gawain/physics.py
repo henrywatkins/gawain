@@ -19,8 +19,7 @@ class FluxCalculator:
         
         
         """
-
-        x_plus_flux, x_minus_flux = self.flux_function(solution.left()), self.flux_function(solution.right())
+        x_plus_flux, x_minus_flux = self.flux_function(solution.plusX()), self.flux_function(solution.minusX())
         total_flux = -(x_plus_flux - x_minus_flux)/self.cell_sizes[0]
         return total_flux
 
