@@ -54,8 +54,32 @@ class SolutionVector:
         #self.integrator = Integrator(self.data, Parameters.cell_sizes)
         self.integrator = LeapFrogIntegrator(self.data, Parameters.cell_sizes)
         #self.integrator = RK2Integrator(self.data, Parameters.cell_sizes)
-
-
+        self.boundary_condition = BoundaryConditions(Parameters)
+    
+    def set_centroid(self, array):
+        self.data = array
+        
+    def centroid(self):
+        return self.data
+    
+    def plusX(self):
+        """ returns data shifted i+1
+        """
+        pass
+    
+    def minusX(self):
+        """ returns data shifted i-1
+        """
+        pass
+    def plusY(self):
+        """ returns data shifted j+1
+        """
+        pass
+    def minusY(self):
+        """ returns data shifted j-1
+        """
+        pass
+ 
     def update(self, time_step):
         self.data = self.integrator.integrate(self.data, time_step)
 
@@ -103,5 +127,6 @@ class RK2Integrator(Integrator):
         return solution_data
 
 class BoundaryConditions:
-    def __init__(self):
+    def __init__(self, params):
+        self.type = params.boundary_conditions
         pass

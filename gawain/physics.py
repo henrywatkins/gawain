@@ -2,21 +2,28 @@
 
 import numpy as np
 
+def F(array):
+    speed = 0.1
+    return speed*array
+    
+
 class FluxCalculator:
     def __init__(self, cell_sizes):
         self.cell_sizes = cell_sizes
+        self.flux_function = F
 
-    def calculate_fluxes(self, solution_data):
+    def calculate_fluxes(self, solution):
+        """ Returns the RHS of the conservation equation
+        
+        make so that it is agnostic to the exact form of flux function
+        
+        
+        """
 
-        x_plus_flux, x_minus_flux = 2., 1.
-        total_flux = (x_plus_flux - x_minus_flux)/self.cell_sizes[0]
+        x_plus_flux, x_minus_flux = self.flux_function(solution.left()), self.flux_function(solution.right())
+        total_flux = -(x_plus_flux - x_minus_flux)/self.cell_sizes[0]
         return total_flux
 
-    def x_flux(self, vector):
-        return 0.1*vector
-
-    def y_flux(self, vector):
-        return 0.0*vector
         
 class HLLFluxer(FluxCalculator):
     def __init__(self):
