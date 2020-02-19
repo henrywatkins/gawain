@@ -51,12 +51,13 @@ class SolutionVector:
     def __init__(self, Parameters):
         self.data = Parameters.initial_condition
         #self.integrator = PredictorCorrectorIntegrator(self.data, Parameters.cell_sizes)
-        self.integrator = Integrator(self.data, Parameters.cell_sizes)
-        
-    def update(self, delta):
-        self.data = self.integrator.integrate(self.data, delta)
+        #self.integrator = Integrator(self.data, Parameters.cell_sizes)
+        self.integrator = LeapFrogIntegrator(self.data, Parameters.cell_sizes)
+        #self.integrator = RK2Integrator(self.data, Parameters.cell_sizes)
 
 
+    def update(self, time_step):
+        self.data = self.integrator.integrate(self.data, time_step)
 
 class Integrator:
     def __init__(self, solution_data, cell_sizes):
@@ -71,37 +72,36 @@ class Integrator:
 class PredictorCorrectorIntegrator(Integrator):
     def __init__(self, solution_data, cell_sizes):
         super(PredictorCorrectorIntegrator, self).__init__(solution_data, cell_sizes)
-        
-    def predictor_corrector(self, solution_data, h):
-        intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
-        intermediate_solution = solution_data + h*intermediate_flux
-        final_flux = self.fluxer.calculate_fluxes(intermediate_solution, h)
-        solution_data += 0.5*h*(intermediate_flux + final_flux)
+
+    def integrate(self, solution_data, time_step):
+        intermediate_flux = self.fluxer.calculate_fluxes(solution_data)
+        intermediate_solution = solution_data + time_step*intermediate_flux
+        final_flux = self.fluxer.calculate_fluxes(intermediate_solution)
+        return solution_data + 0.5*time_step*(intermediate_flux + final_flux)
 
 class LeapFrogIntegrator(Integrator):
-    def __init__(self):
-        super(LeapFrogIntegrator, self).__init__()
-        
-    def leapfrog(self, solution_data, h):
+    def __init__(self, solution_data, cell_sizes):
+        super(LeapFrogIntegrator, self).__init__(solution_data, cell_sizes)
+
+    def integrate(self, solution_data, time_step):
         dummy = solution_data
-        intermediate_flux = self.fluxer.calculate_fluxes(solution_data, h)
-        solution_data = self.lagged_solution+h*intermediate_flux
+        intermediate_flux = self.fluxer.calculate_fluxes(solution_data)
+        solution_data = self.lagged_solution+2.*time_step*intermediate_flux
         self.lagged_solution = dummy
-        return 
+        return solution_data
 
 class RK2Integrator(Integrator):
-    def __init__(self):
-        super(RK2Integrator, self).__init__()
-        
-    def RK2(self, solution_data, h):
-        k1 = self.fluxer.calculate_fluxes(solution_data, h)
-        k1 *= h
-        k2 = self.fluxer.calculate_fluxes(solution_data + 0.75*k1, h)
-        k2 *= h
-        solution_data += 0.333*k1 + 0.666*k2
+    def __init__(self, solution_data, cell_sizes):
+        super(RK2Integrator, self).__init__(solution_data, cell_sizes)
 
+    def integrate(self, solution_data, time_step):
+        k1 = self.fluxer.calculate_fluxes(solution_data)
+        k1 *= time_step
+        k2 = self.fluxer.calculate_fluxes(solution_data + 0.75*k1)
+        k2 *= time_step
+        solution_data += 0.333*k1 + 0.666*k2
         return solution_data
-        
+
 class BoundaryConditions:
     def __init__(self):
         pass
