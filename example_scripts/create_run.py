@@ -36,7 +36,7 @@ initial_condition = np.exp(-0.5*((x-mu)/sigma)**2)
 ############## DO NOT EDIT BELOW ############################
 param_dict = {"run_name":run_name,"clf":cfl, "mesh_shape":mesh_shape, 
               "mesh_size":mesh_size, "t_max":t_max, "n_dumps":n_outputs, 
-              "using_gpu":False, "initial_con":initial_condition, "bound_cons":None}
+              "using_gpu":False, "initial_con":initial_condition, "bound_cons":boundary_conditions}
 
 param_filename = run_name+".pkl"
               

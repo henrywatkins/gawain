@@ -32,14 +32,14 @@ def main():
     input_file = str(sys.argv[1])
     params = io.Parameters(from_file=input_file)
     solution = nu.SolutionVector(params)
-    integrator = nu.Integrator(solution, params)
+    integrator = nu.RK2Integrator(solution, params)
     params.print_params()
     output = io.Output(params, solution)
     clock = nu.Clock(params)
 
     while not clock.is_end():
         dt = clock.calculate_timestep(solution)
-        solution = integrator.update(solution, dt)
+        solution = integrator.integrate(solution, dt)
 
         if clock.is_output():
             output.dump(solution)

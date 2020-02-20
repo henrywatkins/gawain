@@ -17,8 +17,6 @@ class Output:
         try:
             os.mkdir(self.save_dir)
         except:
-            
-            #new_name = self.save_dir+"_new"
             Parameters.run_name += "_new"
             new_name = Parameters.run_name
             print('A run folder with that name already exists, changing directory name to ', new_name)
@@ -30,7 +28,8 @@ class Output:
         file_name = self.save_dir+'/gawain_output_'+str(self.dump_no)+'.h5'
         self.dump_no+=1
         with h5py.File(file_name, 'w') as file:
-            dataset = file.create_dataset('output_name', data=SolutionVector.data, dtype='f')
+            to_output = SolutionVector.centroid()
+            dataset = file.create_dataset('output_name', data=to_output, dtype='f')
 
 
 
@@ -46,14 +45,14 @@ class Parameters:
         self.initial_condition = None
         self.boundary_conditions = None
         self.cell_sizes = None
-        
+
         if from_file is not None:
             with open(from_file, 'rb') as input:
                 input_dict = pickle.load(input)
-                self.set_parameters(input_dict)
+            self.set_parameters(input_dict)
         else:
             print('Invalid or missing input file, please specify parameters')
-            
+
     def set_parameters(self, dict_input):
         self.cfl = dict_input['clf']
         self.mesh_shape = dict_input['mesh_shape']
@@ -67,7 +66,7 @@ class Parameters:
         self.cell_sizes = (self.mesh_size[0]/self.mesh_shape[0],
                            self.mesh_size[1]/self.mesh_shape[1],
                            self.mesh_size[2]/self.mesh_shape[2])
-        
+
 
     def print_params(self):
         print('run name: ', self.run_name)
