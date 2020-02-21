@@ -32,7 +32,7 @@ def main():
     input_file = str(sys.argv[1])
     params = io.Parameters(from_file=input_file)
     solution = nu.SolutionVector(params)
-    integrator = nu.RK2Integrator(solution, params)
+    integrator = nu.Integrator(solution, params)
     params.print_params()
     output = io.Output(params, solution)
     clock = nu.Clock(params)

@@ -4,12 +4,12 @@ import numpy as np
 
 def F(array):
     speed = 0.1
-    return speed*array
+    return speed*array*array
 
 
 class FluxCalculator:
     def __init__(self, Parameters):
-        self.cell_sizes = Parameters.cell_sizes
+        (self.dx, self.dy, self.dz) = Parameters.cell_sizes
         self.flux_function = F
 
     def calculate_fluxes(self, SolutionVector):
@@ -21,7 +21,7 @@ class FluxCalculator:
         """
         x_plus_flux = self.flux_function(SolutionVector.plusX())
         x_minus_flux = self.flux_function(SolutionVector.minusX())
-        total_flux = -(x_plus_flux - x_minus_flux)/self.cell_sizes[0]
+        total_flux = -(x_plus_flux - x_minus_flux)/self.dx
         return total_flux
 
 
@@ -30,30 +30,46 @@ class HLLFluxer(FluxCalculator):
         pass
 
 class LaxFriedrichsFluxer(FluxCalculator):
+    def __init__(self, Parameters):
+        super(LaxFriedrichsFluxer, self).__init__(Parameters)
+    def calculate_fluxes(self, SolutionVector):
+       x_plus_flux = self.flux_function(SolutionVector.plusX())
+       x_mid_flux = self.flux_function(SolutionVector.centroid())
+       x_minus_flux = self.flux_function(SolutionVector.minusX())
 
-   def lax_friedrichs(self, solution_data, dt):
+       x_minus_flux = 0.5*(x_minus_flux+x_mid_flux)
+       ui, ui1 = SolutionVector.centroid(), SolutionVector.minusX()
+       x_minus_flux+=-0.5*self.dx*1000.*(ui-ui1)
 
-        # using periodic conditions for now
-        shifted_left = np.roll(solution_data, -1, axis=0)
-        shifted_right = np.roll(solution_data, 1, axis=0)
-        shifted_up = np.roll(solution_data, 1, axis=1)
-        shifted_down = np.roll(solution_data, -1, axis=1)
+       x_plus_flux = 0.5*(x_plus_flux+x_mid_flux)
+       ui, ui1 = SolutionVector.centroid(), SolutionVector.plusX()
+       x_plus_flux+=-0.5*self.dx*1000.*(ui1-ui)
 
-        middle_x = self.x_flux(solution_data)
-        middle_y = self.y_flux(solution_data)
-        left = self.x_flux(shifted_right)
-        right = self.x_flux(shifted_left)
-        top = self.y_flux(shifted_down)
-        bottom = self.y_flux(shifted_up)
+       total_flux = -(x_plus_flux - x_minus_flux)/self.dx
+       return total_flux
 
-        x_minus_flux = 0.5*(left)#-0.5*self.cell_sizes[0]*(solution_data - shifted_right)/dt
-        x_plus_flux = 0.5*(right)#-0.5*self.cell_sizes[0]*(solution_data - shifted_left)/dt
+class LaxWendroffFluxer(FluxCalculator):
+    """ using two-step richtmyer method
+    """
+    def __init__(self, Parameters):
+        super(LaxWendroffFluxer, self).__init__(Parameters)
+    def calculate_fluxes(self, SolutionVector):
+       x_plus_flux = self.flux_function(SolutionVector.plusX())
+       x_mid_flux = self.flux_function(SolutionVector.centroid())
+       x_minus_flux = self.flux_function(SolutionVector.minusX())
 
-        y_minus_flux = 0.5*(bottom)#-0.5*self.cell_sizes[1]*(solution_data - shifted_down)/dt
-        y_plus_flux = 0.5*(top)#-0.5*self.cell_sizes[1]*(solution_data - shifted_up)/dt
+       ui, ui1 = SolutionVector.centroid(), SolutionVector.minusX()
+       intermediate_plus = 0.5*(ui+ui1)
+       intermediate_plus+=-0.5*self.dx*1000.*(x_plus_flux-x_mid_flux)
 
-        return x_plus_flux, x_minus_flux, y_plus_flux, y_minus_flux
+       ui, ui1 = SolutionVector.centroid(), SolutionVector.plusX()
+       intermediate_minus = 0.5*(ui+ui1)
+       intermediate_minus+=-0.5*self.dx*1000.*(x_mid_flux-x_minus_flux)
 
+       x_plus_flux = self.flux_function(intermediate_plus)
+       x_minus_flux = self.flux_function(intermediate_minus)
+       total_flux = -(x_plus_flux - x_minus_flux)/self.dx
+       return total_flux
 
 class MUSCLFluxer(FluxCalculator):
 

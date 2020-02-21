@@ -5,7 +5,7 @@ import time
 from tqdm import tqdm
 import numpy as np
 
-from gawain.physics import FluxCalculator
+from gawain.physics import FluxCalculator, LaxFriedrichsFluxer, LaxWendroffFluxer
 
 class Clock:
     def __init__(self, Parameters):
@@ -43,7 +43,7 @@ class Clock:
 
     def calculate_timestep(self, SolutionVector):
 
-        dt = 0.01
+        dt = 0.001
         self.timestep = dt
         return dt
 
@@ -88,7 +88,7 @@ class SolutionVector:
 class Integrator:
     def __init__(self, SolutionVector, Parameters):
         self.lagged_solution = SolutionVector
-        self.fluxer = FluxCalculator(Parameters)
+        self.fluxer = LaxWendroffFluxer(Parameters)
 
     def integrate(self, SolutionVector, time_step):
         intermediate_flux = self.fluxer.calculate_fluxes(SolutionVector)
