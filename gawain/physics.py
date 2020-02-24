@@ -74,22 +74,4 @@ class LaxWendroffFluxer(FluxCalculator):
 class MUSCLFluxer(FluxCalculator):
 
     def MUSCL(self, solution_data, dt):
-
-        # using periodic conditions for now
-        shifted_left = np.roll(solution_data, -1, axis=0)
-        shifted_right = np.roll(solution_data, 1, axis=0)
-        shifted_up = np.roll(solution_data, 1, axis=1)
-        shifted_down = np.roll(solution_data, -1, axis=1)
-
-        reconstruct_x_right = 0.5*(solution_data + shifted_left)
-        reconstruct_x_left = 0.5*(solution_data + shifted_right)
-        reconstruct_y_top = 0.5*(solution_data + shifted_down)
-        reconstruct_y_bottom = 0.5*(solution_data + shifted_up)
-
-        x_minus_flux = self.x_flux(reconstruct_x_left)
-        x_plus_flux = self.x_flux(reconstruct_x_right)
-
-        y_minus_flux = self.y_flux(reconstruct_y_bottom)
-        y_plus_flux = self.y_flux(reconstruct_y_top)
-
-        return x_plus_flux, x_minus_flux, y_plus_flux, y_minus_flux
+        pass

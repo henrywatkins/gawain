@@ -14,13 +14,13 @@ class Output:
     def __init__(self, Parameters, SolutionVector):
         self.dump_no = 0
         self.save_dir = 'output/'+str(Parameters.run_name)
-        try:
-            os.mkdir(self.save_dir)
-        except:
+        if os.path.exists(self.save_dir):
             Parameters.run_name += "_new"
             new_name = Parameters.run_name
             print('A run folder with that name already exists, changing directory name to ', new_name)
             self.save_dir = 'output/'+str(Parameters.run_name)
+            os.mkdir(self.save_dir)
+        else:
             os.mkdir(self.save_dir)
         self.dump(SolutionVector)
 
@@ -131,16 +131,18 @@ class Reader:
 
     def animate(self, variable, save_as=None):
         if self.data_dim==2:
+            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
+            to_plot = self.data.reshape(new_shape)
             fig = plt.figure()
             plt.title('Animation of '+variable)
             plt.xlim(0, 100)
             plt.ylim(0, 1)
             plt.xlabel('x')
             plt.ylabel(variable)
-            im = plt.plot(self.data[0], animated=True)
+            im = plt.plot(to_plot[0], animated=True)
 
             def update_fig(i):
-                im.set_array(self.data[i])
+                im.set_array(to_plot[i])
                 return im,
 
             anim = FuncAnimation(fig, update_fig, blit=True)
@@ -149,16 +151,20 @@ class Reader:
             plt.show()
 
         elif self.data_dim==1:
+
+            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
+            to_plot = self.data.reshape(new_shape)
+
             fig = plt.figure()
             plt.title('Animation of '+variable)
             plt.xlim(0, 100)
             plt.ylim(0, 100)
             plt.xlabel('x')
             plt.ylabel('y')
-            im = plt.imshow(self.data[0], animated=True)
+            im = plt.imshow(to_plot[0], animated=True)
 
             def update_fig(i):
-                im.set_array(self.data[i])
+                im.set_array(to_plot[i])
                 return im,
 
             anim = FuncAnimation(fig, update_fig, blit=True)
