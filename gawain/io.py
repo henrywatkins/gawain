@@ -88,9 +88,12 @@ class Reader:
             file_data = np.array(file['output_name'])
             self.data.append(file_data)
         self.data = np.array(self.data)
+        self.data_dim = self.data.shape.count(1)
 
     def plot(self, variable, timesteps=[0], save_as=None):
-        if len(self.data.shape)==2:
+        if self.data_dim==2:
+            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
+            to_plot = self.data.reshape(new_shape)
             fig, ax = plt.subplots()
             ax.set_title('Plot of '+variable)
             ax.set_xlim(0, 100)
@@ -98,18 +101,22 @@ class Reader:
             ax.set_xlabel('x')
             ax.set_ylabel(variable)
             for step in timesteps:
-                ax.plot(self.data[step], label='step='+str(step))
+                ax.plot(to_plot[step], label='step='+str(step))
             ax.legend()
             if save_as:
                 plt.savefig(save_as)
             plt.show()
-        elif len(self.data.shape)==3:
+        elif self.data_dim==1:
+
+            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
+            to_plot = self.data.reshape(new_shape)
+
             n_plots = len(timesteps)
             fig, axs = plt.subplots(1,n_plots, figsize=(5*n_plots, 5))
             fig.suptitle('Plots of '+variable)
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
-                subplot.pcolormesh(self.data[step], vmin=0, vmax=1, cmap='plasma')
+                subplot.pcolormesh(to_plot[step], vmin=0, vmax=1, cmap='plasma')
                 subplot.set_xlim(0, 100)
                 subplot.set_ylim(0, 100)
                 subplot.set_xlabel('x')
@@ -123,7 +130,7 @@ class Reader:
 
 
     def animate(self, variable, save_as=None):
-        if len(self.data.shape)==2:
+        if self.data_dim==2:
             fig = plt.figure()
             plt.title('Animation of '+variable)
             plt.xlim(0, 100)
@@ -141,7 +148,7 @@ class Reader:
                 anim.save(save_as)
             plt.show()
 
-        elif len(self.data.shape)==3:
+        elif self.data_dim==1:
             fig = plt.figure()
             plt.title('Animation of '+variable)
             plt.xlim(0, 100)
