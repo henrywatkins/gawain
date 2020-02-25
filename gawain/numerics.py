@@ -64,23 +64,25 @@ class SolutionVector:
         """ returns data shifted i+1
         """
         if self.boundary_conditions[0]=="periodic":
-            return np.roll(self.data, 1)
+            return np.roll(self.data, 1, axis=1)
 
     def minusX(self):
         """ returns data shifted i-1
         """
         if self.boundary_conditions[0]=="periodic":
-            return np.roll(self.data, -1)
+            return np.roll(self.data, -1, axis=1)
 
     def plusY(self):
         """ returns data shifted j+1
         """
-        pass
+        if self.boundary_conditions[1]=="periodic":
+            return np.roll(self.data, -1, axis=2)
 
     def minusY(self):
         """ returns data shifted j-1
         """
-        pass
+        if self.boundary_conditions[1]=="periodic":
+            return np.roll(self.data, -1, axis=2)
 
     def update(self, array):
         self.data+=array
@@ -88,11 +90,11 @@ class SolutionVector:
 class Integrator:
     def __init__(self, SolutionVector, Parameters):
         self.lagged_solution = SolutionVector
-        self.fluxer = LaxWendroffFluxer(Parameters)
+        self.fluxer = LaxFriedrichsFluxer(Parameters)
 
     def integrate(self, SolutionVector, time_step):
-        intermediate_flux = self.fluxer.calculate_fluxes(SolutionVector)
-        SolutionVector.update(time_step*intermediate_flux)
+        intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector)
+        SolutionVector.update(time_step*intermediate_rhs)
         return SolutionVector
 
 
@@ -101,12 +103,12 @@ class PredictorCorrectorIntegrator(Integrator):
         super(PredictorCorrectorIntegrator, self).__init__(SolutionVector, Parameters)
 
     def integrate(self, SolutionVector, time_step):
-        intermediate_flux = self.fluxer.calculate_fluxes(SolutionVector)
+        intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector)
         intermediate_solution = SolutionVector
-        intermediate_solution.update(time_step*intermediate_flux)
-        final_flux = self.fluxer.calculate_fluxes(intermediate_solution)
-        final_flux = 0.5*(intermediate_flux + final_flux)
-        SolutionVector.update(time_step*final_flux)
+        intermediate_solution.update(time_step*intermediate_rhs)
+        final_rhs = self.fluxer.calculate_rhs(intermediate_solution)
+        final_rhs = 0.5*(intermediate_rhs + final_rhs)
+        SolutionVector.update(time_step*final_rhs)
         return SolutionVector
 
 class LeapFrogIntegrator(Integrator):
@@ -115,8 +117,8 @@ class LeapFrogIntegrator(Integrator):
 
     def integrate(self, SolutionVector, time_step):
         dummy = SolutionVector
-        intermediate_flux = self.fluxer.calculate_fluxes(SolutionVector)
-        self.lagged_solution.update(2.*time_step*intermediate_flux)
+        intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector)
+        self.lagged_solution.update(2.*time_step*intermediate_rhs)
         SolutionVector = self.lagged_solution
         self.lagged_solution = dummy
         return SolutionVector
@@ -126,10 +128,10 @@ class RK2Integrator(Integrator):
         super(RK2Integrator, self).__init__(SolutionVector, Parameters)
 
     def integrate(self, SolutionVector, time_step):
-        k1 = self.fluxer.calculate_fluxes(SolutionVector)
+        k1 = self.fluxer.calculate_rhs(SolutionVector)
         k1 *= time_step
         SolutionVector.update(0.75*k1)
-        k2 = self.fluxer.calculate_fluxes(SolutionVector)
+        k2 = self.fluxer.calculate_rhs(SolutionVector)
         k2 *= time_step
         SolutionVector.update(0.333*k1 + 0.666*k2)
         return SolutionVector
