@@ -43,7 +43,7 @@ class Clock:
 
     def calculate_timestep(self, SolutionVector):
 
-        dt = 0.001
+        dt = 0.0001
         self.timestep = dt
         return dt
 
@@ -64,25 +64,25 @@ class SolutionVector:
         """ returns data shifted i+1
         """
         if self.boundary_conditions[0]=="periodic":
-            return np.roll(self.data, 1, axis=1)
+            return np.roll(self.data, 1, axis=0)
 
     def minusX(self):
         """ returns data shifted i-1
         """
         if self.boundary_conditions[0]=="periodic":
-            return np.roll(self.data, -1, axis=1)
+            return np.roll(self.data, -1, axis=0)
 
     def plusY(self):
         """ returns data shifted j+1
         """
         if self.boundary_conditions[1]=="periodic":
-            return np.roll(self.data, -1, axis=2)
+            return np.roll(self.data, 1, axis=1)
 
     def minusY(self):
         """ returns data shifted j-1
         """
         if self.boundary_conditions[1]=="periodic":
-            return np.roll(self.data, -1, axis=2)
+            return np.roll(self.data, -1, axis=1)
 
     def update(self, array):
         self.data+=array

@@ -2,9 +2,19 @@
 
 import numpy as np
 
-def F(array):
+def BurgersFlux(array):
     speed=0.1
     return speed*array*array
+
+def EulerFlux(SolutionVector):
+
+    pressure = SolutionVector.adi_ind()*()
+
+    x_flux = np.array(SolutionVector.momX(), )
+    y_flux = np.array(SolutionVector.momY(), )
+    z_flux = np.array(SolutionVector.momZ(), )
+
+    return (x_fluz, y_flux, z_flux)
 
 
 class FluxCalculator:
@@ -14,7 +24,7 @@ class FluxCalculator:
         self.x_minus_flux = None
         self.y_plus_flux = None
         self.y_minus_flux = None
-        self.flux_function = F
+        self.flux_function = BurgersFlux
 
     def specific_fluxes(self, SolutionVector):
         pass
@@ -28,8 +38,8 @@ class FluxCalculator:
 
         self.specific_fluxes(SolutionVector)
 
-        total_flux = -(self.x_plus_flux - self.x_minus_flux)/self.dx
-        total_flux += -(self.y_plus_flux - self.y_minus_flux)/self.dy
+        total_flux = -(self.y_plus_flux - self.y_minus_flux)/self.dy
+        total_flux += -(self.x_plus_flux - self.x_minus_flux)/self.dx
         return total_flux
 
 
