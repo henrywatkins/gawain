@@ -28,8 +28,16 @@ class Output:
         file_name = self.save_dir+'/gawain_output_'+str(self.dump_no)+'.h5'
         self.dump_no+=1
         with h5py.File(file_name, 'w') as file:
-            to_output = SolutionVector.centroid()
-            dataset = file.create_dataset('output_name', data=to_output, dtype='f')
+            to_output = SolutionVector.dens()
+            dataset = file.create_dataset('density', data=to_output, dtype='f')
+            to_output = SolutionVector.momX()
+            dataset = file.create_dataset('xmomentum', data=to_output, dtype='f')
+            to_output = SolutionVector.momY()
+            dataset = file.create_dataset('ymomentum', data=to_output, dtype='f')
+            to_output = SolutionVector.en()
+            dataset = file.create_dataset('energy', data=to_output, dtype='f')
+            to_output = SolutionVector.momMagSqr()
+            dataset = file.create_dataset('sqrmomentum', data=to_output, dtype='f')
 
 
 
@@ -41,6 +49,7 @@ class Parameters:
         self.mesh_size = None
         self.t_max = None
         self.n_outputs = None
+        self.adi_idx = None
         self.with_gpu = False
         self.initial_condition = None
         self.boundary_conditions = None
@@ -63,6 +72,7 @@ class Parameters:
         self.initial_condition = dict_input['initial_con']
         self.boundary_conditions = dict_input['bound_cons']
         self.run_name = dict_input['run_name']
+        self.adi_idx = dict_input['adi_idx']
         self.cell_sizes = (self.mesh_size[0]/self.mesh_shape[0],
                            self.mesh_size[1]/self.mesh_shape[1],
                            self.mesh_size[2]/self.mesh_shape[2])
@@ -80,20 +90,24 @@ class Parameters:
 class Reader:
     def __init__(self, run_dir_path):
         self.file_path = run_dir_path
-        self.data = []
+        self.variables = ['density','xmomentum','ymomentum','sqrmomentum', 'energy']
+        self.data = {variable:[] for variable in self.variables}
         files = os.listdir(self.file_path)
         for num in range(len(files)):
             filename = self.file_path+'/gawain_output_'+str(num)+'.h5'
             file = h5py.File(filename, 'r')
-            file_data = np.array(file['output_name'])
-            self.data.append(file_data)
-        self.data = np.array(self.data)
-        self.data_dim = self.data.shape.count(1)
+            for variable in self.variables:
+                file_data = np.array(file[variable])
+                self.data[variable].append(file_data)
+        for variable in self.variables:
+            self.data[variable] = np.array(self.data[variable])
+        self.data_dim = self.data['density'].shape.count(1)
 
     def plot(self, variable, timesteps=[0], save_as=None):
+        to_plot = self.data[variable]
         if self.data_dim==2:
-            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
-            to_plot = self.data.reshape(new_shape)
+            new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
+            to_plot = to_plot.reshape(new_shape)
             fig, ax = plt.subplots()
             ax.set_title('Plot of '+variable)
             ax.set_xlim(0, 100)
@@ -108,8 +122,8 @@ class Reader:
             plt.show()
         elif self.data_dim==1:
 
-            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
-            to_plot = self.data.reshape(new_shape)
+            new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
+            to_plot = to_plot.reshape(new_shape)
 
             n_plots = len(timesteps)
             fig, axs = plt.subplots(1,n_plots, figsize=(5*n_plots, 5))
@@ -130,9 +144,10 @@ class Reader:
 
 
     def animate(self, variable, save_as=None):
+        to_plot = self.data[variable]
         if self.data_dim==2:
-            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
-            to_plot = self.data.reshape(new_shape)
+            new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
+            to_plot = to_plot.reshape(new_shape)
             fig = plt.figure()
             plt.title('Animation of '+variable)
             plt.xlim(0, 100)
@@ -152,8 +167,8 @@ class Reader:
 
         elif self.data_dim==1:
 
-            new_shape = tuple(filter(lambda x: x>1, self.data.shape))
-            to_plot = self.data.reshape(new_shape)
+            new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
+            to_plot = to_plot.reshape(new_shape)
 
             fig = plt.figure()
             plt.title('Animation of '+variable)

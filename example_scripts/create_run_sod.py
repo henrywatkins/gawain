@@ -24,8 +24,6 @@ nx, ny, nz = 100, 1, 1
 
 mesh_shape = (nx, ny, nz)
 
-boundary_conditions = ['periodic', 'periodic', 'periodic']
-
 n_outputs = 100
 
 lx, ly, lz = 1.0, 0.001, 0.001
@@ -39,7 +37,7 @@ X,Y,Z =np.meshgrid(x,y,z, indexing='ij')
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 7/5
+adiabatic_idx = 7.0/5.0
 
 rho = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.125])
 
@@ -49,9 +47,13 @@ mx = np.zeros(X.shape)
 my = mx
 mz = mx
 
-e = pressure/(adi_ind-1) + mx*mx/rho
+e = pressure/(adiabatic_idx-1) + mx*mx/rho
 
 initial_condition = np.array([rho, mx, my, mz, e])
+
+############## BOUNDARY CONDITION ######################
+
+boundary_conditions = ['periodic', 'periodic', 'periodic']
 
 ############## DO NOT EDIT BELOW ############################
 param_dict = {"run_name":run_name,"clf":cfl, "mesh_shape":mesh_shape,

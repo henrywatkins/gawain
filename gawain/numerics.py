@@ -43,7 +43,7 @@ class Clock:
 
     def calculate_timestep(self, SolutionVector):
 
-        dt = 0.0001
+        dt = 0.001
         self.timestep = dt
         return dt
 
@@ -52,6 +52,7 @@ class SolutionVector:
     def __init__(self, Parameters):
         self.data = None
         self.boundary_conditions = Parameters.boundary_conditions
+        self.adi_idx = Parameters.adi_idx
         self.set_centroid(Parameters.initial_condition)
 
     def set_centroid(self, array):
@@ -64,28 +65,52 @@ class SolutionVector:
         """ returns data shifted i+1
         """
         if self.boundary_conditions[0]=="periodic":
-            return np.roll(self.data, 1, axis=0)
+            #return np.roll(self.data, 1, axis=1)
+            self.data = np.roll(self.data, 1, axis=1)
+            return self
 
     def minusX(self):
         """ returns data shifted i-1
         """
         if self.boundary_conditions[0]=="periodic":
-            return np.roll(self.data, -1, axis=0)
+            #return np.roll(self.data, -1, axis=1)
+            self.data = np.roll(self.data, -1, axis=1)
+            return self
 
     def plusY(self):
         """ returns data shifted j+1
         """
         if self.boundary_conditions[1]=="periodic":
-            return np.roll(self.data, 1, axis=1)
+            #return np.roll(self.data, 1, axis=2)
+            self.data = np.roll(self.data, 1, axis=2)
+            return self
 
     def minusY(self):
         """ returns data shifted j-1
         """
         if self.boundary_conditions[1]=="periodic":
-            return np.roll(self.data, -1, axis=1)
+            #return np.roll(self.data, -1, axis=2)
+            self.data = np.roll(self.data, -1, axis=2)
+            return self
 
     def update(self, array):
         self.data+=array
+
+    def adi_minus1(self):
+        return self.adi_idx-1
+
+    def dens(self):
+        return self.data[0]
+    def momX(self):
+        return self.data[1]
+    def momY(self):
+        return self.data[2]
+    def momZ(self):
+        return self.data[3]
+    def momMagSqr(self):
+        return self.data[1]*self.data[2]*self.data[3]
+    def en(self):
+        return self.data[4]
 
 class Integrator:
     def __init__(self, SolutionVector, Parameters):
