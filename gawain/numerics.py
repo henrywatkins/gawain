@@ -4,6 +4,7 @@ import time
 
 from tqdm import tqdm
 import numpy as np
+import copy
 
 from gawain.physics import FluxCalculator, LaxFriedrichsFluxer, LaxWendroffFluxer
 
@@ -43,7 +44,7 @@ class Clock:
 
     def calculate_timestep(self, SolutionVector):
 
-        dt = 0.001
+        dt = 0.0001
         self.timestep = dt
         return dt
 
@@ -65,33 +66,37 @@ class SolutionVector:
         """ returns data shifted i+1
         """
         if self.boundary_conditions[0]=="periodic":
-            #return np.roll(self.data, 1, axis=1)
-            self.data = np.roll(self.data, 1, axis=1)
-            return self
+            #new = copy.deepcopy(self)
+            #new.data = np.roll(self.data, 1, axis=1)
+            #return new
+            return np.roll(self.data, 1, axis=1)
 
     def minusX(self):
         """ returns data shifted i-1
         """
         if self.boundary_conditions[0]=="periodic":
-            #return np.roll(self.data, -1, axis=1)
-            self.data = np.roll(self.data, -1, axis=1)
-            return self
+            #new = copy.deepcopy(self)
+            #new.data = np.roll(self.data, -1, axis=1)
+            #return new
+            return np.roll(self.data, -1, axis=1)
 
     def plusY(self):
         """ returns data shifted j+1
         """
         if self.boundary_conditions[1]=="periodic":
-            #return np.roll(self.data, 1, axis=2)
-            self.data = np.roll(self.data, 1, axis=2)
-            return self
+            #new = copy.deepcopy(self)
+            #new.data = np.roll(self.data, 1, axis=2)
+            #return new
+            return np.roll(self.data, 1, axis=2)
 
     def minusY(self):
         """ returns data shifted j-1
         """
         if self.boundary_conditions[1]=="periodic":
-            #return np.roll(self.data, -1, axis=2)
-            self.data = np.roll(self.data, -1, axis=2)
-            return self
+            #new = copy.deepcopy(self)
+            #new.data = np.roll(self.data, -1, axis=2)
+            #return new
+            return np.roll(self.data, -1, axis=2)
 
     def update(self, array):
         self.data+=array
@@ -108,14 +113,14 @@ class SolutionVector:
     def momZ(self):
         return self.data[3]
     def momMagSqr(self):
-        return self.data[1]*self.data[2]*self.data[3]
+        return self.data[1]*self.data[1]+self.data[2]*self.data[2]+self.data[3]*self.data[3]
     def en(self):
         return self.data[4]
 
 class Integrator:
     def __init__(self, SolutionVector, Parameters):
         self.lagged_solution = SolutionVector
-        self.fluxer = LaxFriedrichsFluxer(Parameters)
+        self.fluxer = LaxWendroffFluxer(Parameters)
 
     def integrate(self, SolutionVector, time_step):
         intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector)
