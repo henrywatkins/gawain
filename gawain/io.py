@@ -10,17 +10,14 @@ from matplotlib import rc
 from matplotlib import rcParams
 import h5py
 
+import gawain.numerics as nu
+import gawain.physics as ph
+
 class Output:
     def __init__(self, Parameters, SolutionVector):
         self.dump_no = 0
         self.save_dir = 'output/'+str(Parameters.run_name)
-        if os.path.exists(self.save_dir):
-            Parameters.run_name += "_new"
-            new_name = Parameters.run_name
-            print('A run folder with that name already exists, changing directory name to ', new_name)
-            self.save_dir = 'output/'+str(Parameters.run_name)
-            os.mkdir(self.save_dir)
-        else:
+        if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         self.dump(SolutionVector)
 
@@ -43,6 +40,8 @@ class Output:
 
 class Parameters:
     def __init__(self, from_file=None):
+        self.integrator_type = None
+        self.fluxer_type = None
         self.run_name = None
         self.cfl = None
         self.mesh_shape = None
@@ -64,12 +63,12 @@ class Parameters:
             print('Invalid or missing input file, please specify parameters')
 
     def set_parameters(self, dict_input):
-        self.cfl = dict_input['clf']
+        self.cfl = dict_input['cfl']
         self.mesh_shape = dict_input['mesh_shape']
         self.mesh_size = dict_input['mesh_size']
         self.t_max = dict_input['t_max']
         self.n_outputs = dict_input['n_dumps']
-        self.with_gpu = dict_input['using_gpu']
+        self.using_gpu = dict_input['using_gpu']
         self.initial_condition = dict_input['initial_con']
         self.boundary_type = dict_input['bound_cons']
         self.run_name = dict_input['run_name']
@@ -81,6 +80,29 @@ class Parameters:
             if axis=="fixed":
                 self.boundary_value[i] = [self.initial_condition.take(0, axis=i+1),
                                           self.initial_condition.take(-1, axis=i+1)]
+                                          
+        if dict_input['integrator']=='euler':
+            self.integrator_type = nu.Integrator
+        elif dict_input['integrator']=='rk2':
+            self.integrator_type = nu.RK2Integrator
+        elif dict_input['integrator']=='leapfrog':
+            self.integrator_type = nu.LeapFrogIntegrator
+        elif dict_input['integrator']=='predictor-corrector':
+            self.integrator_type = nu.PredictorCorrectorIntegrator
+        else:
+            print("integrator type not recognised")
+            
+        
+        if dict_input['fluxer']=='base':
+            self.fluxer_type = ph.FluxCalculator
+        elif dict_input['fluxer']=='lax-wendroff':
+            self.fluxer_type = ph.LaxWendroffFluxer
+        elif dict_input['fluxer']=='lax-friedrichs':
+            self.fluxer_type = ph.LaxFriedrichsFluxer
+        elif dict_input['fluxer']=='hll':
+            self.fluxer_type = ph.HLLFluxer
+        else:
+            print("fluxer type not recognised")
 
 
     def print_params(self):
@@ -89,6 +111,8 @@ class Parameters:
         print('nx, ny, nz =', self.mesh_shape)
         print('lx, ly, lz =', self.mesh_size)
         print('t max =', self.t_max)
+        print('fluxer: ', str(self.fluxer_type))
+        print('integrator: ', str(self.integrator_type))
         print('-----------------------------------')
 
 

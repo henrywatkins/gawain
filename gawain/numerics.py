@@ -13,7 +13,7 @@ class Clock:
         self.current_time = 0.0
         self.end_time = Parameters.t_max
         self.cfl = Parameters.cfl
-        self.timestep = 0.001
+        self.timestep = 0.00001
         self.next_output_time = 0.0
         self.output_spacing = self.end_time/Parameters.n_outputs
         self.bar = tqdm(total=self.end_time)
@@ -43,10 +43,7 @@ class Clock:
 
 
     def calculate_timestep(self, SolutionVector):
-
-        dt = 0.0001
-        self.timestep = dt
-        return dt
+        return self.timestep
 
 
 class SolutionVector:
@@ -117,7 +114,7 @@ class SolutionVector:
 class Integrator:
     def __init__(self, SolutionVector, Parameters):
         self.lagged_solution = SolutionVector
-        self.fluxer = LaxWendroffFluxer(Parameters)
+        self.fluxer = Parameters.fluxer_type(Parameters)
 
     def integrate(self, SolutionVector, time_step):
         intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector)

@@ -5,18 +5,16 @@ import pickle
 
 run_name = "sod_shock_tube"
 
-cfl = 0.25
+cfl = 0.01
 
 with_gpu = False
 
 t_max = 0.25
 
 # "euler", "rk2", "leapfrog", "predictor-corrector"
-integrator = "euler"
-# "base", "lax-wendroff", "lax-friedrichs", "hll", "muscl"
-fluxer = "lax-wendroff"
-# "none"
-limiter = "none"
+integrator = "leapfrog"
+# "base", "lax-wendroff", "lax-friedrichs", "hll"
+fluxer = "lax-friedrichs"
 
 ################ MESH #####################
 
@@ -52,15 +50,15 @@ e = pressure/(adiabatic_idx-1) + mx*mx/rho
 initial_condition = np.array([rho, mx, my, mz, e])
 
 ############## BOUNDARY CONDITION ######################
-
-boundary_conditions = ['periodic', 'periodic', 'periodic']
+# available types: periodic, fixed
+boundary_conditions = ['fixed', 'periodic', 'periodic']
 
 ############## DO NOT EDIT BELOW ############################
-param_dict = {"run_name":run_name,"clf":cfl, "mesh_shape":mesh_shape,
+param_dict = {"run_name":run_name,"cfl":cfl, "mesh_shape":mesh_shape,
               "mesh_size":mesh_size, "t_max":t_max, "n_dumps":n_outputs,
               "using_gpu":with_gpu, "initial_con":initial_condition,
               "bound_cons":boundary_conditions, "adi_idx":adiabatic_idx,
-              "integrator":integrator, "fluxer":fluxer, "limiter":limiter}
+              "integrator":integrator, "fluxer":fluxer}
 
 param_filename = run_name+".pkl"
 
