@@ -52,7 +52,8 @@ class Clock:
 class SolutionVector:
     def __init__(self, Parameters):
         self.data = None
-        self.boundary_conditions = Parameters.boundary_conditions
+        self.boundary_type = Parameters.boundary_type
+        self.boundary_value = Parameters.boundary_value
         self.adi_idx = Parameters.adi_idx
         self.set_centroid(Parameters.initial_condition)
 
@@ -63,40 +64,36 @@ class SolutionVector:
         return self.data
 
     def plusX(self):
-        """ returns data shifted i+1
-        """
-        if self.boundary_conditions[0]=="periodic":
-            #new = copy.deepcopy(self)
-            #new.data = np.roll(self.data, 1, axis=1)
-            #return new
-            return np.roll(self.data, 1, axis=1)
+        rolled = np.roll(self.data, 1, axis=1)
+        if self.boundary_type[0]=="periodic":
+            return rolled
+        elif self.boundary_type[0]=="fixed":
+            rolled[:,0] = self.boundary_value[0][0]
+            return rolled
 
     def minusX(self):
-        """ returns data shifted i-1
-        """
-        if self.boundary_conditions[0]=="periodic":
-            #new = copy.deepcopy(self)
-            #new.data = np.roll(self.data, -1, axis=1)
-            #return new
-            return np.roll(self.data, -1, axis=1)
+        rolled = np.roll(self.data, -1, axis=1)
+        if self.boundary_type[0]=="periodic":
+            return rolled
+        elif self.boundary_type[0]=="fixed":
+            rolled[:,-1] = self.boundary_value[0][1]
+            return rolled
 
     def plusY(self):
-        """ returns data shifted j+1
-        """
-        if self.boundary_conditions[1]=="periodic":
-            #new = copy.deepcopy(self)
-            #new.data = np.roll(self.data, 1, axis=2)
-            #return new
-            return np.roll(self.data, 1, axis=2)
+        rolled = np.roll(self.data, 1, axis=2)
+        if self.boundary_type[1]=="periodic":
+            return rolled
+        elif self.boundary_type[1]=="fixed":
+            rolled[:,:,0] = self.boundary_value[1][0]
+            return rolled
 
     def minusY(self):
-        """ returns data shifted j-1
-        """
-        if self.boundary_conditions[1]=="periodic":
-            #new = copy.deepcopy(self)
-            #new.data = np.roll(self.data, -1, axis=2)
-            #return new
-            return np.roll(self.data, -1, axis=2)
+        rolled = np.roll(self.data, -1, axis=2)
+        if self.boundary_type[1]=="periodic":
+            return rolled
+        elif self.boundary_type[1]=="fixed":
+            rolled[:,:,-1] = self.boundary_value[1][1]
+            return rolled
 
     def update(self, array):
         self.data+=array

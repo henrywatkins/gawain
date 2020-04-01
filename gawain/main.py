@@ -7,6 +7,7 @@
 '''
 
 import sys
+import plac
 
 import gawain.io as io
 import gawain.numerics as nu
@@ -24,15 +25,19 @@ preamble = """
 Simulation parameters:
 """
 
+@plac.annotations(
+        input_file=("Input runfile path", "positional", None, str),
+        output_path=("Output folder path", "option", "o", str),
+)
+#
 
-def main():
+def main(input_file, output_path=None):
 
     print(preamble)
 
-    input_file = str(sys.argv[1])
     params = io.Parameters(from_file=input_file)
     solution = nu.SolutionVector(params)
-    integrator = nu.Integrator(solution, params)
+    integrator = nu.RK2Integrator(solution, params)
     params.print_params()
     output = io.Output(params, solution)
     clock = nu.Clock(params)
@@ -52,4 +57,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    plac.call(main)

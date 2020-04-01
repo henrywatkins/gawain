@@ -52,7 +52,8 @@ class Parameters:
         self.adi_idx = None
         self.with_gpu = False
         self.initial_condition = None
-        self.boundary_conditions = None
+        self.boundary_type = None
+        self.boundary_value = [None,None,None]
         self.cell_sizes = None
 
         if from_file is not None:
@@ -70,12 +71,16 @@ class Parameters:
         self.n_outputs = dict_input['n_dumps']
         self.with_gpu = dict_input['using_gpu']
         self.initial_condition = dict_input['initial_con']
-        self.boundary_conditions = dict_input['bound_cons']
+        self.boundary_type = dict_input['bound_cons']
         self.run_name = dict_input['run_name']
         self.adi_idx = dict_input['adi_idx']
         self.cell_sizes = (self.mesh_size[0]/self.mesh_shape[0],
                            self.mesh_size[1]/self.mesh_shape[1],
                            self.mesh_size[2]/self.mesh_shape[2])
+        for i, axis in enumerate(self.boundary_type):
+            if axis=="fixed":
+                self.boundary_value[i] = [self.initial_condition.take(0, axis=i+1),
+                                          self.initial_condition.take(-1, axis=i+1)]
 
 
     def print_params(self):
@@ -192,4 +197,4 @@ class Reader:
 
 
     def get_data(self, variable):
-        return self.data
+        return self.data[variable]
