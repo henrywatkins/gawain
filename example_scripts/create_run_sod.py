@@ -12,13 +12,13 @@ with_gpu = False
 t_max = 0.25
 
 # "euler", "rk2", "leapfrog", "predictor-corrector"
-integrator = "leapfrog"
+integrator = "euler"
 # "base", "lax-wendroff", "lax-friedrichs", "hll"
-fluxer = "lax-friedrichs"
+fluxer = "lax-wendroff"
 
 ################ MESH #####################
 
-nx, ny, nz = 100, 1, 1
+nx, ny, nz = 2000, 1, 1
 
 mesh_shape = (nx, ny, nz)
 

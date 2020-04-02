@@ -58,7 +58,7 @@ def EulerFluxY(u):
     thermal_en = (en-0.5*momMagSqr/dens)
     pressure = adi_minus1*thermal_en
 
-    y_flux = np.array([momX,
+    y_flux = np.array([momY,
                       momY*momX/dens,
                       momY*momY/dens+pressure,
                       momY*momZ/dens,
@@ -67,7 +67,23 @@ def EulerFluxY(u):
     return y_flux
 
 def EulerFluxZ(u):
-    pass
+    dens = u[0]
+    momX = u[1]
+    momY = u[2]
+    momZ = u[3]
+    en = u[4]
+    adi_minus1 = 0.4
+    momMagSqr = momX*momX + momY*momY + momZ*momZ
+
+    thermal_en = (en-0.5*momMagSqr/dens)
+    pressure = adi_minus1*thermal_en
+
+    z_flux = np.array([momZ,
+                      momZ*momX/dens,
+                      momZ*momY/dens,
+                      momZ*momZ/dens+pressure,
+                      (en + pressure)*momZ/dens])
+    return z_flux
 
 class FluxCalculator:
     def __init__(self, Parameters):
@@ -79,17 +95,17 @@ class FluxCalculator:
         self.flux_functionX = EulerFluxX
         self.flux_functionY = EulerFluxY
 
-    def _specific_fluxes(self, u):
+    def _specific_fluxes(self, u, dt):
         pass
 
-    def calculate_rhs(self, u):
+    def calculate_rhs(self, u, dt):
         self.x_plus_flux = self.flux_functionX(u.plusX())
         self.x_minus_flux = self.flux_functionX(u.minusX())
 
         self.y_plus_flux = self.flux_functionY(u.plusY())
         self.y_minus_flux = self.flux_functionY(u.minusY())
 
-        self._specific_fluxes(u)
+        self._specific_fluxes(u, dt)
 
         total_flux = -(self.y_plus_flux - self.y_minus_flux)/self.dy
         total_flux += -(self.x_plus_flux - self.x_minus_flux)/self.dx
@@ -104,28 +120,24 @@ class HLLFluxer(FluxCalculator):
 class LaxFriedrichsFluxer(FluxCalculator):
     def __init__(self, Parameters):
         super(LaxFriedrichsFluxer, self).__init__(Parameters)
-    def _specific_fluxes(self, u):
+    def _specific_fluxes(self, u, dt):
 
        u1 = u.centroid()
 
        mid_flux_x = self.flux_functionX(u1)
        mid_flux_y = self.flux_functionY(u1)
 
-       self.x_minus_flux = 0.5*(self.x_minus_flux+mid_flux_x)
        u2 = u.minusX()
-       self.x_minus_flux+=-0.5*self.dx*10000.*(u1-u2)
+       self.x_minus_flux = 0.5*((self.x_minus_flux+mid_flux_x)-self.dx*(u1-u2)/dt)
 
-       self.x_plus_flux = 0.5*(self.x_plus_flux+mid_flux_x)
        u2 = u.plusX()
-       self.x_plus_flux+=-0.5*self.dx*10000.*(u2-u1)
+       self.x_plus_flux = 0.5*((self.x_plus_flux+mid_flux_x)-self.dx*(u2-u1)/dt)
 
-       self.y_minus_flux = 0.5*(self.y_minus_flux+mid_flux_y)
        u2 = u.minusY()
-       self.y_minus_flux+=-0.5*self.dy*10000.*(u1-u2)
-
-       self.y_plus_flux = 0.5*(self.y_plus_flux+mid_flux_y)
+       self.y_minus_flux = 0.5*((self.y_minus_flux+mid_flux_y)-self.dy*(u1-u2)/dt)
+       
        u2 = u.plusY()
-       self.y_plus_flux+=-0.5*self.dy*10000.*(u2-u1)
+       self.y_plus_flux = 0.5*((self.y_plus_flux+mid_flux_y)-self.dy*(u2-u1)/dt)
 
 
 class LaxWendroffFluxer(FluxCalculator):
@@ -133,31 +145,27 @@ class LaxWendroffFluxer(FluxCalculator):
     """
     def __init__(self, Parameters):
         super(LaxWendroffFluxer, self).__init__(Parameters)
-    def _specific_fluxes(self, u):
+    def _specific_fluxes(self, u, dt):
 
        u1 = u.centroid()
 
        mid_flux_x = self.flux_functionX(u1)
        mid_flux_y = self.flux_functionY(u1)
 
-       u2 = u.minusX()
-       intermediate_plus_x = 0.5*(u1+u2)
-       intermediate_plus_x+=-0.5*self.dx*10000.*(self.x_plus_flux-mid_flux_x)
-
        u2 = u.plusX()
-       intermediate_minus_x = 0.5*(u1+u2)
-       intermediate_minus_x+=-0.5*self.dx*10000.*(mid_flux_x-self.x_minus_flux)
+       intermediate_plus_x = 0.5*((u1+u2)-dt*(self.x_plus_flux-mid_flux_x)/self.dx) 
+
+       u2 = u.minusX()
+       intermediate_minus_x = 0.5*((u1+u2)-dt*(mid_flux_x-self.x_minus_flux)/self.dx)
 
        self.x_plus_flux = self.flux_functionX(intermediate_plus_x)
        self.x_minus_flux = self.flux_functionX(intermediate_minus_x)
 
-       u2 = u.minusY()
-       intermediate_plus_y = 0.5*(u1+u2)
-       intermediate_plus_y+=-0.5*self.dy*10000.*(self.y_plus_flux-mid_flux_y)
-
        u2 = u.plusY()
-       intermediate_minus_y = 0.5*(u1+u2)
-       intermediate_minus_y+=-0.5*self.dy*10000.*(mid_flux_y-self.y_minus_flux)
+       intermediate_plus_y = 0.5*((u1+u2)-dt*(self.y_plus_flux-mid_flux_y)/self.dy)
+
+       u2 = u.minusY()
+       intermediate_minus_y = 0.5*((u1+u2)-dt*(mid_flux_y-self.y_minus_flux)/self.dy)
 
        self.y_plus_flux = self.flux_functionY(intermediate_plus_y)
        self.y_minus_flux = self.flux_functionY(intermediate_minus_y)

@@ -113,6 +113,7 @@ class Parameters:
         print('t max =', self.t_max)
         print('fluxer: ', str(self.fluxer_type))
         print('integrator: ', str(self.integrator_type))
+        print('boundary types: ',self.boundary_type)
         print('-----------------------------------')
 
 
@@ -134,13 +135,14 @@ class Reader:
 
     def plot(self, variable, timesteps=[0], save_as=None):
         to_plot = self.data[variable]
+        # 1D runs
         if self.data_dim==2:
             new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
             to_plot = to_plot.reshape(new_shape)
             fig, ax = plt.subplots()
             ax.set_title('Plot of '+variable)
-            ax.set_xlim(0, 100)
-            ax.set_ylim(0, 1)
+            ax.set_xlim(0, new_shape[1])
+            ax.set_ylim(0, to_plot[0].max())
             ax.set_xlabel('x')
             ax.set_ylabel(variable)
             for step in timesteps:
@@ -149,6 +151,8 @@ class Reader:
             if save_as:
                 plt.savefig(save_as)
             plt.show()
+        
+        #2D runs
         elif self.data_dim==1:
 
             new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
@@ -159,9 +163,9 @@ class Reader:
             fig.suptitle('Plots of '+variable)
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
-                subplot.pcolormesh(to_plot[step], vmin=0, vmax=1, cmap='plasma')
-                subplot.set_xlim(0, 100)
-                subplot.set_ylim(0, 100)
+                subplot.pcolormesh(to_plot[step], vmin=0, vmax=to_plot[0].max(), cmap='plasma')
+                subplot.set_xlim(0, new_shape[1])
+                subplot.set_ylim(0, new_shape[2])
                 subplot.set_xlabel('x')
                 subplot.set_ylabel('y')
                 subplot.set_title('timestep='+str(step))
@@ -174,26 +178,42 @@ class Reader:
 
     def animate(self, variable, save_as=None):
         to_plot = self.data[variable]
+        #1D animation
         if self.data_dim==2:
             new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
             to_plot = to_plot.reshape(new_shape)
             fig = plt.figure()
-            plt.title('Animation of '+variable)
-            plt.xlim(0, 100)
-            plt.ylim(0, 1)
-            plt.xlabel('x')
-            plt.ylabel(variable)
-            im = plt.plot(to_plot[0], animated=True)
+            ax = plt.axes(xlim=(0, new_shape[1]), ylim=(0, to_plot[0].max()))
+            ax.set_xlabel('x')
+            ax.set_ylabel(variable)
+            ax.set_title('Animation of '+variable)
+            line, = ax.plot([], lw=3)
+            #plt.title('Animation of '+variable)
+            #plt.xlim(0, new_shape[1])
+            #plt.ylim(0, to_plot[0].max())
+            #plt.xlabel('x')
+            #plt.ylabel(variable)
+            #im = plt.plot(to_plot[0], animated=True)
+            
+            def init():
+                line.set_data([])
+                return line,
+            
+            def animate(i):
+                line.set_data(to_plot[i])
+                return line,
 
             def update_fig(i):
                 im.set_array(to_plot[i])
                 return im,
 
-            anim = FuncAnimation(fig, update_fig, blit=True)
+            #anim = FuncAnimation(fig, update_fig, blit=True)
+            anim = FuncAnimation(fig, animate, init_func=init, blit=True)
             if save_as:
                 anim.save(save_as)
             plt.show()
-
+            
+        #2D animation
         elif self.data_dim==1:
 
             new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
