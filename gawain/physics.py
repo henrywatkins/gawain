@@ -1,10 +1,13 @@
 ''' physics-specific routines '''
 
 import numpy as np
+import sys
 
-def BurgersFlux(array):
-    speed=0.1
-    return speed*array*array
+def debug(array, name):
+    if not np.all(np.isfinite(array)):
+        print("inf in "+name)
+        sys.exit("error")
+        
 
 def EulerFluxX(u):
 
@@ -92,8 +95,11 @@ class FluxCalculator:
         self.x_minus_flux = None
         self.y_plus_flux = None
         self.y_minus_flux = None
+        self.z_plus_flux = None
+        self.z_minus_flux = None
         self.flux_functionX = EulerFluxX
         self.flux_functionY = EulerFluxY
+        self.flux_functionZ = EulerFluxZ
 
     def _specific_fluxes(self, u, dt):
         pass
@@ -114,8 +120,169 @@ class FluxCalculator:
 
 
 class HLLFluxer(FluxCalculator):
-    def __init__(self):
-        pass
+    """ A MUSCL-Hancock HLL solver using superbee limiter
+    """
+    def __init__(self, Parameters):
+        super(HLLFluxer, self).__init__(Parameters)
+        self.boundary_value = Parameters.boundary_value
+    
+    def smoothness(self, minus, mid, plus):
+        d = 0.000001
+        numer = mid-minus
+        numer+=(1.+2.*np.sign(numer))*d 
+        denom = plus-mid
+        denom+=(1.+2.*np.sign(denom))*d 
+        return numer/denom
+        
+    def superbee(self, r):
+        return np.maximum(np.zeros(r.shape), 
+                          np.maximum(np.minimum(2*r, np.ones(r.shape)),
+                          np.minimum(r, 2*np.ones(r.shape))))
+    def vanleer(self, r):
+        abs_r = np.absolute(r)
+        return (r+abs_r)/(1.0+abs_r)
+        
+    def calculate_sound_speed(self, u):
+        adi_idx = 1.4
+        dens = u[0]
+        momX = u[1]
+        momY = u[2]
+        momZ = u[3]
+        en = u[4]
+        adi_minus1 = adi_idx-1.0
+        momMagSqr = momX*momX + momY*momY + momZ*momZ
+
+        thermal_en = (en-0.5*momMagSqr/dens)
+        pressure = adi_minus1*thermal_en
+        debug(thermal_en,"thermal_en")
+        
+        return 0.5*adi_idx*pressure/dens
+        
+    def left_waves(self, Ur, Ul):
+        
+        vel = Ul[1]/Ul[0]
+        speed = self.calculate_sound_speed(Ul)
+        sl = vel - speed
+        vel = Ur[1]/Ur[0]
+        speed = self.calculate_sound_speed(Ur)
+        sr = vel-speed
+        
+        return np.minimum(sl, sr)
+        
+    def right_waves(self, Ur, Ul):
+        vel = Ul[1]/Ul[0]
+        speed = self.calculate_sound_speed(Ul)
+        sl = vel + speed
+        vel = Ur[1]/Ur[0]
+        speed = self.calculate_sound_speed(Ur)
+        sr = vel+speed
+        return np.maximum(sl, sr)
+    
+    def hll_flux_X(self, Sl, Sr, Ul, Ur):
+        
+        fl = self.flux_functionX(Ul)
+        fr = self.flux_functionX(Ur)
+        
+        fhll = (Sr*fl - Sl*fr + Sl*Sr*(Ur-Ul))/(Sr-Sl)
+        
+        return np.where(Sl>=0.0, fl, np.where(Sr<=0.0, fr, fhll))
+        
+    def MUSCL_Hancock_reconstruction(self, U_left, U_mid, U_right):
+        #reconstruct
+        limited = self.superbee(self.smoothness(U_left,U_mid,U_right))
+        rights = U_mid - 0.5*limited*(U_mid - U_left)
+        lefts = U_mid + 0.5*limited*(U_right - U_mid)
+       
+        #evlove
+        self.x_plus_flux = self.flux_functionX(lefts)
+        self.x_minus_flux = self.flux_functionX(rights)
+        
+        rights = rights + 0.5*dt*(self.x_plus_flux-self.x_minus_flux)/self.dx 
+        lefts = lefts + 0.5*dt*(self.x_plus_flux-self.x_minus_flux)/self.dx
+        
+        return lefts, rights
+        
+        
+    def _specific_fluxes(self, u, dt):
+        #MUSCL-Hancock reconstruction
+        
+        ui = u.centroid()
+        uplus = u.plusX()
+        uminus = u.minusX()
+        
+        #lefts, rights = self.MUSCL_Hancock_reconstruction(uminus, ui, uplus)
+        
+        #HLL flux calculation
+        
+        #minus flux calculation
+
+        Sl = self.left_waves(ui, uminus)
+        Sr = self.right_waves(ui, uminus)
+
+        
+        self.x_minus_flux = self.hll_flux_X(Sl, Sr, uminus, ui)
+        
+        
+        #plus flux calculation
+        
+        Sl = self.left_waves(uplus, ui)
+        Sr = self.right_waves(uplus, ui)
+        
+        self.x_plus_flux = self.hll_flux_X(Sl, Sr, ui, uplus)
+        
+        
+        
+class VanLeerFluxer(FluxCalculator):
+    def __init__(self, Parameters):
+        super(VanLeerFluxer, self).__init__(Parameters)
+        
+    def smoothness(self, minus, mid, plus):
+        d = 0.000001
+        numer = mid-minus
+        numer+=(1.+2.*np.sign(numer))*d 
+        denom = plus-mid
+        denom+=(1.+2.*np.sign(denom))*d 
+        return numer/denom
+        
+    def superbee(self, r):
+        return np.maximum(np.zeros(r.shape), np.maximum(np.minimum(2*r, np.ones(r.shape)),np.minimum(r, 2*np.ones(r.shape))))
+    
+    def vanleer(self, r):
+        abs_r = np.absolute(r)
+        return (r+abs_r)/(1.0+abs_r)
+        
+    def _specific_fluxes(self, u, dt):
+       
+       u1 = u.centroid()
+
+       mid_flux_x = self.flux_functionX(u1)
+       
+       ##
+
+       u2 = u.minusX()
+       lf_x_minus_flux = 0.5*((self.x_minus_flux+mid_flux_x)-self.dx*(u1-u2)/dt)
+       
+       intermediate_minus_x = 0.5*((u1+u2)-dt*(mid_flux_x-self.x_minus_flux)/self.dx)
+       
+       lw_x_minus_flux = self.flux_functionX(intermediate_minus_x)
+       
+       u3 = u.minusX(2)
+       r = self.smoothness(u3, u2, u1)
+       self.x_minus_flux = lf_x_minus_flux + 0.5*self.superbee(r)*(lw_x_minus_flux - lf_x_minus_flux)
+       
+       ##
+
+       u2 = u.plusX()
+       lf_x_plus_flux = 0.5*((self.x_plus_flux+mid_flux_x)-self.dx*(u2-u1)/dt)
+        
+       intermediate_plus_x = 0.5*((u1+u2)-dt*(self.x_plus_flux-mid_flux_x)/self.dx) 
+
+       lw_x_plus_flux = self.flux_functionX(intermediate_plus_x)
+       
+       u3 = u.minusX()
+       r = self.smoothness(u3, u1, u2)
+       self.x_plus_flux = lf_x_plus_flux + 0.5*self.superbee(r)*(lw_x_plus_flux - lf_x_plus_flux)
+        
 
 class LaxFriedrichsFluxer(FluxCalculator):
     def __init__(self, Parameters):
@@ -125,14 +292,15 @@ class LaxFriedrichsFluxer(FluxCalculator):
        u1 = u.centroid()
 
        mid_flux_x = self.flux_functionX(u1)
-       mid_flux_y = self.flux_functionY(u1)
 
        u2 = u.minusX()
        self.x_minus_flux = 0.5*((self.x_minus_flux+mid_flux_x)-self.dx*(u1-u2)/dt)
 
        u2 = u.plusX()
        self.x_plus_flux = 0.5*((self.x_plus_flux+mid_flux_x)-self.dx*(u2-u1)/dt)
-
+       
+       mid_flux_y = self.flux_functionY(u1)
+       
        u2 = u.minusY()
        self.y_minus_flux = 0.5*((self.y_minus_flux+mid_flux_y)-self.dy*(u1-u2)/dt)
        
@@ -150,7 +318,6 @@ class LaxWendroffFluxer(FluxCalculator):
        u1 = u.centroid()
 
        mid_flux_x = self.flux_functionX(u1)
-       mid_flux_y = self.flux_functionY(u1)
 
        u2 = u.plusX()
        intermediate_plus_x = 0.5*((u1+u2)-dt*(self.x_plus_flux-mid_flux_x)/self.dx) 
@@ -160,6 +327,8 @@ class LaxWendroffFluxer(FluxCalculator):
 
        self.x_plus_flux = self.flux_functionX(intermediate_plus_x)
        self.x_minus_flux = self.flux_functionX(intermediate_minus_x)
+       
+       mid_flux_y = self.flux_functionY(u1)
 
        u2 = u.plusY()
        intermediate_plus_y = 0.5*((u1+u2)-dt*(self.y_plus_flux-mid_flux_y)/self.dy)
@@ -170,8 +339,3 @@ class LaxWendroffFluxer(FluxCalculator):
        self.y_plus_flux = self.flux_functionY(intermediate_plus_y)
        self.y_minus_flux = self.flux_functionY(intermediate_minus_y)
 
-
-class MUSCLFluxer(FluxCalculator):
-
-    def MUSCL(self, solution_data, dt):
-        pass

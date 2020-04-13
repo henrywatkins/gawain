@@ -13,7 +13,7 @@ class Clock:
         self.current_time = 0.0
         self.end_time = Parameters.t_max
         self.cfl = Parameters.cfl
-        self.timestep = 0.0001
+        self.timestep = 0.00001
         self.next_output_time = 0.0
         self.output_spacing = self.end_time/Parameters.n_outputs
         self.bar = tqdm(total=self.end_time)
@@ -26,7 +26,7 @@ class Clock:
             return True
 
     def tick(self):
-        self.bar.update(self.current_time)
+        self.bar.update(self.timestep)
         self.current_time += self.timestep
 
     def is_output(self):
@@ -60,48 +60,48 @@ class SolutionVector:
     def centroid(self):
         return self.data
 
-    def plusX(self):
-        rolled = np.roll(self.data, 1, axis=1)
+    def plusX(self, n=1):
+        rolled = np.roll(self.data, n, axis=1)
         if self.boundary_type[0]=="periodic":
             return rolled
         elif self.boundary_type[0]=="fixed":
             rolled[:,0] = self.boundary_value[0][0]
             return rolled
 
-    def minusX(self):
-        rolled = np.roll(self.data, -1, axis=1)
+    def minusX(self, n=1):
+        rolled = np.roll(self.data, -n, axis=1)
         if self.boundary_type[0]=="periodic":
             return rolled
         elif self.boundary_type[0]=="fixed":
             rolled[:,-1] = self.boundary_value[0][1]
             return rolled
 
-    def plusY(self):
-        rolled = np.roll(self.data, 1, axis=2)
+    def plusY(self, n=1):
+        rolled = np.roll(self.data, n, axis=2)
         if self.boundary_type[1]=="periodic":
             return rolled
         elif self.boundary_type[1]=="fixed":
             rolled[:,:,0] = self.boundary_value[1][0]
             return rolled
 
-    def minusY(self):
-        rolled = np.roll(self.data, -1, axis=2)
+    def minusY(self, n=1):
+        rolled = np.roll(self.data, -n, axis=2)
         if self.boundary_type[1]=="periodic":
             return rolled
         elif self.boundary_type[1]=="fixed":
             rolled[:,:,-1] = self.boundary_value[1][1]
             return rolled
     
-    def plusZ(self):
-        rolled = np.roll(self.data, 1, axis=3)
+    def plusZ(self, n=1):
+        rolled = np.roll(self.data, n, axis=3)
         if self.boundary_type[2]=="periodic":
             return rolled
         elif self.boundary_type[2]=="fixed":
             rolled[:,:,0] = self.boundary_value[2][0]
             return rolled
 
-    def minusZ(self):
-        rolled = np.roll(self.data, -1, axis=3)
+    def minusZ(self, n=1):
+        rolled = np.roll(self.data, -n, axis=3)
         if self.boundary_type[2]=="periodic":
             return rolled
         elif self.boundary_type[2]=="fixed":

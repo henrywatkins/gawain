@@ -99,6 +99,8 @@ class Parameters:
             self.fluxer_type = ph.LaxWendroffFluxer
         elif dict_input['fluxer']=='lax-friedrichs':
             self.fluxer_type = ph.LaxFriedrichsFluxer
+        elif dict_input['fluxer']=='vanleer':
+            self.fluxer_type = ph.VanLeerFluxer
         elif dict_input['fluxer']=='hll':
             self.fluxer_type = ph.HLLFluxer
         else:
