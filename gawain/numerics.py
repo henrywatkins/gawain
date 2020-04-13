@@ -4,16 +4,13 @@ import time
 
 from tqdm import tqdm
 import numpy as np
-import copy
-
-from gawain.physics import FluxCalculator, LaxFriedrichsFluxer, LaxWendroffFluxer
 
 class Clock:
     def __init__(self, Parameters):
         self.current_time = 0.0
         self.end_time = Parameters.t_max
         self.cfl = Parameters.cfl
-        self.timestep = 0.00001
+        self.timestep = 0.0001
         self.next_output_time = 0.0
         self.output_spacing = self.end_time/Parameters.n_outputs
         self.bar = tqdm(total=self.end_time)
@@ -126,6 +123,8 @@ class SolutionVector:
         return self.data[1]*self.data[1]+self.data[2]*self.data[2]+self.data[3]*self.data[3]
     def en(self):
         return self.data[4]
+    def sound_speed(self):
+        pass
 
 class Integrator:
     def __init__(self, SolutionVector, Parameters):

@@ -127,7 +127,7 @@ class HLLFluxer(FluxCalculator):
         self.boundary_value = Parameters.boundary_value
     
     def smoothness(self, minus, mid, plus):
-        d = 0.000001
+        d = 0.001
         numer = mid-minus
         numer+=(1.+2.*np.sign(numer))*d 
         denom = plus-mid
@@ -142,6 +142,10 @@ class HLLFluxer(FluxCalculator):
         abs_r = np.absolute(r)
         return (r+abs_r)/(1.0+abs_r)
         
+        
+    def minmod(self, a, b):
+        return np.where(a*b<=0.0, 0.0, np.where(np.absolute(a)<np.absolute(b), a, b))
+        
     def calculate_sound_speed(self, u):
         adi_idx = 1.4
         dens = u[0]
@@ -154,29 +158,20 @@ class HLLFluxer(FluxCalculator):
 
         thermal_en = (en-0.5*momMagSqr/dens)
         pressure = adi_minus1*thermal_en
-        debug(thermal_en,"thermal_en")
         
-        return 0.5*adi_idx*pressure/dens
+        return np.sqrt(adi_idx*pressure/dens)
         
-    def left_waves(self, Ur, Ul):
+    def wave_speeds(self, Ul, Ur):
         
         vel = Ul[1]/Ul[0]
         speed = self.calculate_sound_speed(Ul)
         sl = vel - speed
         vel = Ur[1]/Ur[0]
         speed = self.calculate_sound_speed(Ur)
-        sr = vel-speed
-        
-        return np.minimum(sl, sr)
-        
-    def right_waves(self, Ur, Ul):
-        vel = Ul[1]/Ul[0]
-        speed = self.calculate_sound_speed(Ul)
-        sl = vel + speed
-        vel = Ur[1]/Ur[0]
-        speed = self.calculate_sound_speed(Ur)
         sr = vel+speed
-        return np.maximum(sl, sr)
+        
+        return sl, sr #np.minimum(sl, sr), np.maximum(sl, sr)
+        
     
     def hll_flux_X(self, Sl, Sr, Ul, Ur):
         
@@ -187,13 +182,18 @@ class HLLFluxer(FluxCalculator):
         
         return np.where(Sl>=0.0, fl, np.where(Sr<=0.0, fr, fhll))
         
-    def MUSCL_Hancock_reconstruction(self, U_left, U_mid, U_right):
+    def MUSCL_Hancock_reconstruction(self, U_left, U_mid, U_right, dt):
+        """" returns the states to the rights and lefts of the interfaces
+        
+        note: this means lefts holds the states for the left of the i+1/2 face,
+        rights holds the states for the right of the i-1/2 face.
+        """
         #reconstruct
-        limited = self.superbee(self.smoothness(U_left,U_mid,U_right))
+        limited = self.minmod(U_right-U_mid, U_mid-U_left)#self.vanleer(self.smoothness(U_left,U_mid,U_right))
         rights = U_mid - 0.5*limited*(U_mid - U_left)
         lefts = U_mid + 0.5*limited*(U_right - U_mid)
        
-        #evlove
+        #evolve
         self.x_plus_flux = self.flux_functionX(lefts)
         self.x_minus_flux = self.flux_functionX(rights)
         
@@ -206,82 +206,36 @@ class HLLFluxer(FluxCalculator):
     def _specific_fluxes(self, u, dt):
         #MUSCL-Hancock reconstruction
         
-        ui = u.centroid()
+        umid = u.centroid()
         uplus = u.plusX()
         uminus = u.minusX()
         
-        #lefts, rights = self.MUSCL_Hancock_reconstruction(uminus, ui, uplus)
+        lefts, rights = self.MUSCL_Hancock_reconstruction(uminus, umid, uplus,dt)
+        
         
         #HLL flux calculation
         
         #minus flux calculation
-
-        Sl = self.left_waves(ui, uminus)
-        Sr = self.right_waves(ui, uminus)
-
         
-        self.x_minus_flux = self.hll_flux_X(Sl, Sr, uminus, ui)
+        umid = rights
+        uminus = np.roll(lefts, -1, axis=1)
+        uminus[:,-1] = self.boundary_value[0][1]
+
+        Sl, Sr = self.wave_speeds(uminus, umid)
+
+        self.x_minus_flux = self.hll_flux_X(Sl, Sr, uminus, umid)
         
         
         #plus flux calculation
         
-        Sl = self.left_waves(uplus, ui)
-        Sr = self.right_waves(uplus, ui)
+        umid = lefts
+        uplus = np.roll(rights, 1, axis=1)
+        uplus[:,0] = self.boundary_value[0][0]
         
-        self.x_plus_flux = self.hll_flux_X(Sl, Sr, ui, uplus)
+        Sl, Sr = self.wave_speeds(umid, uplus)
         
+        self.x_plus_flux = self.hll_flux_X(Sl, Sr, umid, uplus)
         
-        
-class VanLeerFluxer(FluxCalculator):
-    def __init__(self, Parameters):
-        super(VanLeerFluxer, self).__init__(Parameters)
-        
-    def smoothness(self, minus, mid, plus):
-        d = 0.000001
-        numer = mid-minus
-        numer+=(1.+2.*np.sign(numer))*d 
-        denom = plus-mid
-        denom+=(1.+2.*np.sign(denom))*d 
-        return numer/denom
-        
-    def superbee(self, r):
-        return np.maximum(np.zeros(r.shape), np.maximum(np.minimum(2*r, np.ones(r.shape)),np.minimum(r, 2*np.ones(r.shape))))
-    
-    def vanleer(self, r):
-        abs_r = np.absolute(r)
-        return (r+abs_r)/(1.0+abs_r)
-        
-    def _specific_fluxes(self, u, dt):
-       
-       u1 = u.centroid()
-
-       mid_flux_x = self.flux_functionX(u1)
-       
-       ##
-
-       u2 = u.minusX()
-       lf_x_minus_flux = 0.5*((self.x_minus_flux+mid_flux_x)-self.dx*(u1-u2)/dt)
-       
-       intermediate_minus_x = 0.5*((u1+u2)-dt*(mid_flux_x-self.x_minus_flux)/self.dx)
-       
-       lw_x_minus_flux = self.flux_functionX(intermediate_minus_x)
-       
-       u3 = u.minusX(2)
-       r = self.smoothness(u3, u2, u1)
-       self.x_minus_flux = lf_x_minus_flux + 0.5*self.superbee(r)*(lw_x_minus_flux - lf_x_minus_flux)
-       
-       ##
-
-       u2 = u.plusX()
-       lf_x_plus_flux = 0.5*((self.x_plus_flux+mid_flux_x)-self.dx*(u2-u1)/dt)
-        
-       intermediate_plus_x = 0.5*((u1+u2)-dt*(self.x_plus_flux-mid_flux_x)/self.dx) 
-
-       lw_x_plus_flux = self.flux_functionX(intermediate_plus_x)
-       
-       u3 = u.minusX()
-       r = self.smoothness(u3, u1, u2)
-       self.x_plus_flux = lf_x_plus_flux + 0.5*self.superbee(r)*(lw_x_plus_flux - lf_x_plus_flux)
         
 
 class LaxFriedrichsFluxer(FluxCalculator):
