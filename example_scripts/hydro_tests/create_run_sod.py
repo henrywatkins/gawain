@@ -21,7 +21,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 500, 1, 1
+nx, ny, nz = 100, 1, 1
 
 mesh_shape = (nx, ny, nz)
 

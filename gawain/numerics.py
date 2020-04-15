@@ -20,6 +20,7 @@ class Clock:
         if self.current_time<self.end_time:
             return False
         else:
+            self.bar.close()
             return True
 
     def tick(self):
@@ -64,6 +65,11 @@ class SolutionVector:
         elif self.boundary_type[0]=="fixed":
             rolled[:,0] = self.boundary_value[0][0]
             return rolled
+        elif self.boundary_type[0]=="reflective":
+            rolled[0,0] = self.data[0,0]
+            rolled[1,0] = -self.data[1,0]
+            rolled[4,0] = self.data[4,0]
+            return rolled
 
     def minusX(self, n=1):
         rolled = np.roll(self.data, -n, axis=1)
@@ -71,6 +77,11 @@ class SolutionVector:
             return rolled
         elif self.boundary_type[0]=="fixed":
             rolled[:,-1] = self.boundary_value[0][1]
+            return rolled
+        elif self.boundary_type[0]=="reflective":
+            rolled[0,-1] = self.data[0,-1]
+            rolled[1,-1] = -self.data[1,-1]
+            rolled[4,-1] = self.data[4,-1]
             return rolled
 
     def plusY(self, n=1):
@@ -80,6 +91,11 @@ class SolutionVector:
         elif self.boundary_type[1]=="fixed":
             rolled[:,:,0] = self.boundary_value[1][0]
             return rolled
+        elif self.boundary_type[1]=="reflective":
+            rolled[0,:,0] = self.data[0,:,0]
+            rolled[1,:,0] = -self.data[1,:,0]
+            rolled[4,:,0] = self.data[4,:,0]
+            return rolled
 
     def minusY(self, n=1):
         rolled = np.roll(self.data, -n, axis=2)
@@ -88,13 +104,23 @@ class SolutionVector:
         elif self.boundary_type[1]=="fixed":
             rolled[:,:,-1] = self.boundary_value[1][1]
             return rolled
+        elif self.boundary_type[1]=="reflective":
+            rolled[0,:,-1] = self.data[0,:,-1]
+            rolled[1,:,-1] = -self.data[1,:,-1]
+            rolled[4,:,-1] = self.data[4,:,-1]
+            return rolled
     
     def plusZ(self, n=1):
         rolled = np.roll(self.data, n, axis=3)
         if self.boundary_type[2]=="periodic":
             return rolled
         elif self.boundary_type[2]=="fixed":
-            rolled[:,:,0] = self.boundary_value[2][0]
+            rolled[:,:,:,0] = self.boundary_value[2][0]
+            return rolled
+        elif self.boundary_type[2]=="reflective":
+            rolled[0,:,:,0] = self.data[0,:,:,0]
+            rolled[1,:,:,0] = -self.data[1,:,:,0]
+            rolled[4,:,:,0] = self.data[4,:,:,0]
             return rolled
 
     def minusZ(self, n=1):
@@ -102,7 +128,12 @@ class SolutionVector:
         if self.boundary_type[2]=="periodic":
             return rolled
         elif self.boundary_type[2]=="fixed":
-            rolled[:,:,-1] = self.boundary_value[2][1]
+            rolled[:,:,:,-1] = self.boundary_value[2][1]
+            return rolled
+        elif self.boundary_type[2]=="reflective":
+            rolled[0,:,:,-1] = self.data[0,:,:,-1]
+            rolled[1,:,:,-1] = -self.data[1,:,:,-1]
+            rolled[4,:,:,-1] = self.data[4,:,:,-1]
             return rolled
 
     def update(self, array):
