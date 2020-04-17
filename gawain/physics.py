@@ -26,7 +26,7 @@ def EulerFluxX(u):
     momY = u[2]
     momZ = u[3]
     en = u[4]
-    adi_minus1 = 0.6666#0.4
+    adi_minus1 = 0.4#0.6666#0.4
     momMagSqr = momX*momX + momY*momY + momZ*momZ
 
     thermal_en = (en-0.5*momMagSqr/dens)
@@ -55,7 +55,7 @@ def EulerFluxY(u):
     momY = u[2]
     momZ = u[3]
     en = u[4]
-    adi_minus1 = 0.666#0.4
+    adi_minus1 = 0.4#0.666#0.4
     momMagSqr = momX*momX + momY*momY + momZ*momZ
 
     thermal_en = (en-0.5*momMagSqr/dens)
@@ -75,7 +75,7 @@ def EulerFluxZ(u):
     momY = u[2]
     momZ = u[3]
     en = u[4]
-    adi_minus1 = 0.6666#0.4
+    adi_minus1 = 0.4#0.6666#0.4
     momMagSqr = momX*momX + momY*momY + momZ*momZ
 
     thermal_en = (en-0.5*momMagSqr/dens)
@@ -127,7 +127,7 @@ class HLLFluxer(FluxCalculator):
         self.boundary_value = Parameters.boundary_value
     
     def smoothness(self, minus, mid, plus):
-        d = 0.000000001
+        d = 0.00001
         numer = mid-minus + d
         denom = plus-mid + d
         return numer/denom
@@ -144,8 +144,9 @@ class HLLFluxer(FluxCalculator):
     def minmod(self, a, b):
         return np.where(a*b<=0.0, 0.0, np.where(np.absolute(a)<np.absolute(b), a, b))
         
+        
     def calculate_sound_speed(self, u):
-        adi_idx = 1.666#1.4
+        adi_idx = 1.4#1.666#1.4
         dens = u[0]
         momX = u[1]
         momY = u[2]
@@ -156,6 +157,7 @@ class HLLFluxer(FluxCalculator):
 
         thermal_en = (en-0.5*momMagSqr/dens)
         pressure = adi_minus1*thermal_en
+        
         
         return np.sqrt(adi_idx*pressure/dens)
         
@@ -207,13 +209,13 @@ class HLLFluxer(FluxCalculator):
         rights holds the states for the right of the i-1/2 face.
         """
         #reconstruct
-        limited = self.superbee(self.smoothness(U_left, U_mid, U_right))
-        rights = U_mid - 0.5*limited*(U_mid - U_left)
-        lefts = U_mid + 0.5*limited*(U_right - U_mid)
+        limited = self.minmod(U_mid - U_left, U_right-U_mid)
+        rights = U_mid - 0.5*limited
+        lefts = U_mid + 0.5*limited
        
         #evolve
-        self.x_plus_flux = self.flux_functionX(lefts)
-        self.x_minus_flux = self.flux_functionX(rights)
+        self.x_plus_flux = self.flux_functionX(rights)
+        self.x_minus_flux = self.flux_functionX(lefts)
         
         rights = rights + 0.5*dt*(self.x_plus_flux-self.x_minus_flux)/self.dx 
         lefts = lefts + 0.5*dt*(self.x_plus_flux-self.x_minus_flux)/self.dx
@@ -235,9 +237,9 @@ class HLLFluxer(FluxCalculator):
         
         #minus flux calculation
         
-        #umid = rights
-        #uminus = np.roll(lefts, -1, axis=1)
-        #uminus[:,-1] = self.boundary_value[0][1]
+        umid = rights
+        uminus = np.roll(lefts, -1, axis=1)
+        uminus[:,-1] = self.boundary_value[0][1]
 
         Sl, Sr = self.wave_speeds_X(uminus, umid)
 
@@ -246,15 +248,15 @@ class HLLFluxer(FluxCalculator):
         
         #plus flux calculation
         
-        #umid = lefts
-        #uplus = np.roll(rights, 1, axis=1)
-        #uplus[:,0] = self.boundary_value[0][0]
+        umid = lefts
+        uplus = np.roll(rights, 1, axis=1)
+        uplus[:,0] = self.boundary_value[0][0]
         
         Sl, Sr = self.wave_speeds_X(umid, uplus)
         
         self.x_plus_flux = self.hll_flux_X(Sl, Sr, umid, uplus)
         
-        
+        """
         uplus = u.plusY()
         uminus = u.minusY()
 
@@ -274,7 +276,7 @@ class HLLFluxer(FluxCalculator):
         Sl, Sr = self.wave_speeds_Y(umid, uplus)
         
         self.y_plus_flux = self.hll_flux_Y(Sl, Sr, umid, uplus)
-        
+        """
         
 
 class LaxFriedrichsFluxer(FluxCalculator):

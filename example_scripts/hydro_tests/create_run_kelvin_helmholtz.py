@@ -3,58 +3,59 @@
 import numpy as np
 import pickle
 
-run_name = "sod_shock_tube"
+run_name = "kelvin_helmholtz"
 
 cfl = 0.01
 
 with_gpu = False
-with_mhd = False
-with_thermal_conductivity = False
-with_resistivity = False
 
-t_max = 0.25
+t_max = 5.0
 
 # "euler", "rk2", "leapfrog", "predictor-corrector"
 integrator = "euler"
-# "base", "lax-wendroff", "lax-friedrichs", "vanleer", "hll"
+# "base", "lax-wendroff", "lax-friedrichs", "hll"
 fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 200, 1, 1
+nx, ny, nz = 200, 200, 1
 
 mesh_shape = (nx, ny, nz)
 
 n_outputs = 100
 
-lx, ly, lz = 1.0, 0.001, 0.001
+lx, ly, lz = 1.0, 1.0, 0.001
 
 mesh_size = (lx, ly, lz)
 
-x = np.linspace(0.0, lx,num=nx)
-y = np.linspace(0.0, ly,num=ny)
+x = np.linspace(-lx/2., lx/2.,num=nx)
+y = np.linspace(-ly/2., ly/2.,num=ny)
 z = np.linspace(0.0, lz,num=nz)
 X,Y,Z =np.meshgrid(x,y,z, indexing='ij')
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 7.0/5.0
+adiabatic_idx = 1.4#5.0/3.0
 
-rho = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.125])
+rho = np.piecewise(Y, [np.absolute(Y)>0.25, np.absolute(Y)<=0.25], [1.0,2.0])
+vx = np.piecewise(Y, [np.absolute(Y)>0.25, np.absolute(Y)<=0.25], [-0.5,0.5])
+vy = np.zeros(X.shape)
+a = -0.01
+b = 0.01
+seed = a+(b-a)*np.random.random(X.shape)
+pressure = 2.5*np.ones(X.shape)
 
-pressure = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.1])
+mx = rho*vx*(1.0 + seed)
+my = rho*vy*(1.0 + seed)
+mz = np.zeros(X.shape)
 
-mx = np.zeros(X.shape)
-my = mx
-mz = mx
-
-e = pressure/(adiabatic_idx-1) + mx*mx/rho
+e = pressure/(adiabatic_idx-1.) + mx*mx/rho
 
 initial_condition = np.array([rho, mx, my, mz, e])
 
 ############## BOUNDARY CONDITION ######################
 # available types: periodic, fixed
-boundary_conditions = ['fixed', 'periodic', 'periodic']
+boundary_conditions = ['periodic', 'periodic', 'periodic']
 
 ############## DO NOT EDIT BELOW ############################
 param_dict = {"run_name":run_name,"cfl":cfl, "mesh_shape":mesh_shape,
