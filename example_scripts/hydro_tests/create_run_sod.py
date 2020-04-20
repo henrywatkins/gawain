@@ -5,7 +5,7 @@ import pickle
 
 run_name = "sod_shock_tube"
 
-cfl = 0.01
+cfl = 0.5
 
 with_gpu = False
 with_mhd = False

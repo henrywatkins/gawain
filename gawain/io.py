@@ -11,7 +11,8 @@ from matplotlib import rcParams
 import h5py
 
 import gawain.numerics as nu
-import gawain.physics as ph
+import gawain.integrators as integrator
+import gawain.fluxes as fluxes
 
 class Output:
     def __init__(self, Parameters, SolutionVector):
@@ -31,9 +32,9 @@ class Output:
             dataset = file.create_dataset('xmomentum', data=to_output, dtype='f')
             to_output = SolutionVector.momY()
             dataset = file.create_dataset('ymomentum', data=to_output, dtype='f')
-            to_output = SolutionVector.en()
+            to_output = SolutionVector.energy()
             dataset = file.create_dataset('energy', data=to_output, dtype='f')
-            to_output = SolutionVector.momMagSqr()
+            to_output = SolutionVector.momTotalSqr()
             dataset = file.create_dataset('sqrmomentum', data=to_output, dtype='f')
 
 
@@ -82,29 +83,31 @@ class Parameters:
                                           self.initial_condition.take(-1, axis=i+1)]
                                           
         if dict_input['integrator']=='euler':
-            self.integrator_type = nu.Integrator
+            self.integrator_type = integrator.Integrator
         elif dict_input['integrator']=='rk2':
-            self.integrator_type = nu.RK2Integrator
+            self.integrator_type = integrator.RK2Integrator
         elif dict_input['integrator']=='leapfrog':
-            self.integrator_type = nu.LeapFrogIntegrator
+            self.integrator_type = integrator.LeapFrogIntegrator
         elif dict_input['integrator']=='predictor-corrector':
-            self.integrator_type = nu.PredictorCorrectorIntegrator
+            self.integrator_type = integrator.PredictorCorrectorIntegrator
         else:
-            print("integrator type not recognised")
+            print("integrator type not recognised, defalting to euler integrator")
+            self.integrator_type = integrator.Integrator
             
         
         if dict_input['fluxer']=='base':
-            self.fluxer_type = ph.FluxCalculator
+            self.fluxer_type = fluxes.FluxCalculator
         elif dict_input['fluxer']=='lax-wendroff':
-            self.fluxer_type = ph.LaxWendroffFluxer
+            self.fluxer_type = fluxes.LaxWendroffFluxer
         elif dict_input['fluxer']=='lax-friedrichs':
-            self.fluxer_type = ph.LaxFriedrichsFluxer
+            self.fluxer_type = fluxes.LaxFriedrichsFluxer
         elif dict_input['fluxer']=='vanleer':
-            self.fluxer_type = ph.VanLeerFluxer
+            self.fluxer_type = fluxes.VanLeerFluxer
         elif dict_input['fluxer']=='hll':
-            self.fluxer_type = ph.HLLFluxer
+            self.fluxer_type = fluxes.HLLFluxer
         else:
-            print("fluxer type not recognised")
+            print("Fluxer not recognized, defaulting to default flux")
+            self.fluxer_type = fluxes.FluxCalculator
 
 
     def print_params(self):

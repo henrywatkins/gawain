@@ -36,20 +36,21 @@ def main(input_file, output_path=None):
     print(preamble)
 
     params = io.Parameters(from_file=input_file)
-    solution = nu.SolutionVector(params)
+    solution = nu.SolutionVector()
+    solution.set_state(params)
     integrator = params.integrator_type(solution, params)
     params.print_params()
     output = io.Output(params, solution)
     clock = nu.Clock(params)
 
     while not clock.is_end():
-        dt = clock.calculate_timestep(solution)
-        solution = integrator.integrate(solution, dt)
+        dt = solution.calculate_timestep()
+        solution = integrator.integrate(solution)
 
         if clock.is_output():
             output.dump(solution)
 
-        clock.tick()
+        clock.tick(dt)
 
 
     print('\nSimulation Complete, duration:', clock.duration(), 'seconds')

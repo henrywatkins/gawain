@@ -9,11 +9,9 @@ class Clock:
     def __init__(self, Parameters):
         self.current_time = 0.0
         self.end_time = Parameters.t_max
-        self.cfl = Parameters.cfl
-        self.timestep = 0.0001
         self.next_output_time = 0.0
         self.output_spacing = self.end_time/Parameters.n_outputs
-        self.bar = tqdm(total=self.end_time)
+        self.bar = tqdm(total=self.end_time+0.01)
         self.wallclock_start = time.process_time()
 
     def is_end(self):
@@ -23,9 +21,9 @@ class Clock:
             self.bar.close()
             return True
 
-    def tick(self):
-        self.bar.update(self.timestep)
-        self.current_time += self.timestep
+    def tick(self, dt):
+        self.bar.update(dt)
+        self.current_time += dt
 
     def is_output(self):
         if self.current_time >= self.next_output_time:
@@ -40,17 +38,42 @@ class Clock:
         return wallclock_end - self.wallclock_start
 
 
-    def calculate_timestep(self, SolutionVector):
-        return self.timestep
-
-
 class SolutionVector:
-    def __init__(self, Parameters):
+    def __init__(self):
         self.data = None
+        self.boundary_type = None
+        self.boundary_value = None
+        self.dx, self.dy, self.dz = None, None, None
+        self.adi_idx = 1.4
+        self.timestep = 0.0001
+        self.cfl = 0.1
+        
+    def set_state(self, Parameters):
         self.boundary_type = Parameters.boundary_type
         self.boundary_value = Parameters.boundary_value
+        self.dx, self.dy, self.dz = Parameters.cell_sizes
         self.adi_idx = Parameters.adi_idx
         self.set_centroid(Parameters.initial_condition)
+        self.cfl = Parameters.cfl
+        
+    def copy(self):
+        new_vector = SolutionVector()
+        new_vector.data = self.data
+        new_vector.boundary_type = self.boundary_type
+        new_vector.boundary_value = self.boundary_value
+        new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
+        new_vector.adi_idx = self.adi_idx
+        new_vector.timestep = self.timestep
+        return new_vector
+        
+        
+    def calculate_timestep(self):
+        cs_max = self.sound_speed().max()
+        
+        dt = self.cfl*self.dx/cs_max
+        self.timestep = dt
+        
+        return self.timestep
 
     def set_centroid(self, array):
         self.data = array
@@ -61,86 +84,119 @@ class SolutionVector:
     def plusX(self, n=1):
         rolled = np.roll(self.data, n, axis=1)
         if self.boundary_type[0]=="periodic":
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[0]=="fixed":
             rolled[:,0] = self.boundary_value[0][0]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[0]=="reflective":
             rolled[0,0] = self.data[0,0]
             rolled[1,0] = -self.data[1,0]
             rolled[4,0] = self.data[4,0]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
 
     def minusX(self, n=1):
         rolled = np.roll(self.data, -n, axis=1)
         if self.boundary_type[0]=="periodic":
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[0]=="fixed":
             rolled[:,-1] = self.boundary_value[0][1]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[0]=="reflective":
             rolled[0,-1] = self.data[0,-1]
             rolled[1,-1] = -self.data[1,-1]
             rolled[4,-1] = self.data[4,-1]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
 
     def plusY(self, n=1):
         rolled = np.roll(self.data, n, axis=2)
         if self.boundary_type[1]=="periodic":
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[1]=="fixed":
             rolled[:,:,0] = self.boundary_value[1][0]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[1]=="reflective":
             rolled[0,:,0] = self.data[0,:,0]
             rolled[1,:,0] = -self.data[1,:,0]
             rolled[4,:,0] = self.data[4,:,0]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
 
     def minusY(self, n=1):
         rolled = np.roll(self.data, -n, axis=2)
         if self.boundary_type[1]=="periodic":
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[1]=="fixed":
             rolled[:,:,-1] = self.boundary_value[1][1]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[1]=="reflective":
             rolled[0,:,-1] = self.data[0,:,-1]
             rolled[1,:,-1] = -self.data[1,:,-1]
             rolled[4,:,-1] = self.data[4,:,-1]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
     
     def plusZ(self, n=1):
         rolled = np.roll(self.data, n, axis=3)
         if self.boundary_type[2]=="periodic":
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[2]=="fixed":
             rolled[:,:,:,0] = self.boundary_value[2][0]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[2]=="reflective":
             rolled[0,:,:,0] = self.data[0,:,:,0]
             rolled[1,:,:,0] = -self.data[1,:,:,0]
             rolled[4,:,:,0] = self.data[4,:,:,0]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
 
     def minusZ(self, n=1):
         rolled = np.roll(self.data, -n, axis=3)
         if self.boundary_type[2]=="periodic":
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[2]=="fixed":
             rolled[:,:,:,-1] = self.boundary_value[2][1]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
         elif self.boundary_type[2]=="reflective":
             rolled[0,:,:,-1] = self.data[0,:,:,-1]
             rolled[1,:,:,-1] = -self.data[1,:,:,-1]
             rolled[4,:,:,-1] = self.data[4,:,:,-1]
-            return rolled
+            new_vector = self.copy()
+            new_vector.set_centroid(rolled)
+            return new_vector
 
     def update(self, array):
-        self.data+=array
-
-    def adi_minus1(self):
-        return self.adi_idx-1
+        self.data+=self.timestep*array
 
     def dens(self):
         return self.data[0]
@@ -150,58 +206,23 @@ class SolutionVector:
         return self.data[2]
     def momZ(self):
         return self.data[3]
-    def momMagSqr(self):
+        
+    def velX(self):
+        return self.data[1]/self.data[0]
+    def velY(self):
+        return self.data[2]/self.data[0]
+    def velZ(self):
+        return self.data[3]/self.data[0]
+    def momTotalSqr(self):
         return self.data[1]*self.data[1]+self.data[2]*self.data[2]+self.data[3]*self.data[3]
-    def en(self):
+    def energy(self):
         return self.data[4]
+    def pressure(self):
+        adi_minus1 = self.adi_idx - 1.0
+        thermal_en = (self.energy()-0.5*self.momTotalSqr()/self.dens())
+        pressure = adi_minus1*thermal_en
+        return pressure
+        
     def sound_speed(self):
-        pass
-
-class Integrator:
-    def __init__(self, SolutionVector, Parameters):
-        self.lagged_solution = SolutionVector
-        self.fluxer = Parameters.fluxer_type(Parameters)
-
-    def integrate(self, SolutionVector, time_step):
-        intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector, time_step)
-        SolutionVector.update(time_step*intermediate_rhs)
-        return SolutionVector
-
-
-class PredictorCorrectorIntegrator(Integrator):
-    def __init__(self, SolutionVector, Parameters):
-        super(PredictorCorrectorIntegrator, self).__init__(SolutionVector, Parameters)
-
-    def integrate(self, SolutionVector, time_step):
-        intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector, time_step)
-        intermediate_solution = SolutionVector
-        intermediate_solution.update(time_step*intermediate_rhs)
-        final_rhs = self.fluxer.calculate_rhs(intermediate_solution, time_step)
-        final_rhs = 0.5*(intermediate_rhs + final_rhs)
-        SolutionVector.update(time_step*final_rhs)
-        return SolutionVector
-
-class LeapFrogIntegrator(Integrator):
-    def __init__(self, SolutionVector, Parameters):
-        super(LeapFrogIntegrator, self).__init__(SolutionVector, Parameters)
-
-    def integrate(self, SolutionVector, time_step):
-        dummy = SolutionVector
-        intermediate_rhs = self.fluxer.calculate_rhs(SolutionVector, time_step)
-        self.lagged_solution.update(2.*time_step*intermediate_rhs)
-        SolutionVector = self.lagged_solution
-        self.lagged_solution = dummy
-        return SolutionVector
-
-class RK2Integrator(Integrator):
-    def __init__(self, SolutionVector, Parameters):
-        super(RK2Integrator, self).__init__(SolutionVector, Parameters)
-
-    def integrate(self, SolutionVector, time_step):
-        k1 = self.fluxer.calculate_rhs(SolutionVector, time_step)
-        k1 *= time_step
-        SolutionVector.update(0.75*k1)
-        k2 = self.fluxer.calculate_rhs(SolutionVector, time_step)
-        k2 *= time_step
-        SolutionVector.update(0.333*k1 + 0.666*k2)
-        return SolutionVector
+        
+        return np.sqrt(self.adi_idx*self.pressure()/self.dens())
