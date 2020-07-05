@@ -1,7 +1,6 @@
 ''' Input and Output utilities '''
 
 import os
-import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,7 +16,7 @@ import gawain.fluxes as fluxes
 class Output:
     def __init__(self, Parameters, SolutionVector):
         self.dump_no = 0
-        self.save_dir = 'output/'+str(Parameters.run_name)
+        self.save_dir = str(Parameters.output_dir)+'/'+str(Parameters.run_name)
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         self.dump(SolutionVector)
@@ -40,7 +39,7 @@ class Output:
 
 
 class Parameters:
-    def __init__(self, from_file=None):
+    def __init__(self, input_dict):
         self.integrator_type = None
         self.fluxer_type = None
         self.run_name = None
@@ -55,13 +54,10 @@ class Parameters:
         self.boundary_type = None
         self.boundary_value = [None,None,None]
         self.cell_sizes = None
-
-        if from_file is not None:
-            with open(from_file, 'rb') as input:
-                input_dict = pickle.load(input)
-            self.set_parameters(input_dict)
-        else:
-            print('Invalid or missing input file, please specify parameters')
+        self.output_dir = '.'
+        self.with_mhd = False
+        
+        self.set_parameters(input_dict)
 
     def set_parameters(self, dict_input):
         self.cfl = dict_input['cfl']
@@ -73,6 +69,8 @@ class Parameters:
         self.initial_condition = dict_input['initial_con']
         self.boundary_type = dict_input['bound_cons']
         self.run_name = dict_input['run_name']
+        self.with_mhd = dict_input['with_mhd']
+        self.output_dir = dict_input['output_dir']
         self.adi_idx = dict_input['adi_idx']
         self.cell_sizes = (self.mesh_size[0]/self.mesh_shape[0],
                            self.mesh_size[1]/self.mesh_shape[1],
@@ -169,78 +167,14 @@ class Reader:
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
                 subplot.pcolormesh(to_plot[step], vmin=0, vmax=to_plot[0].max(), cmap='plasma')
-                subplot.set_xlim(0, new_shape[1])
-                subplot.set_ylim(0, new_shape[2])
+                subplot.set_xlim(0, new_shape[2])
+                subplot.set_ylim(0, new_shape[1])
                 subplot.set_xlabel('x')
                 subplot.set_ylabel('y')
                 subplot.set_title('timestep='+str(step))
             if save_as:
                 plt.savefig(save_as)
             plt.show()
-        else:
-            print('plot() only supports visualisation of 1D and 2D data')
-
-
-    def animate(self, variable, save_as=None):
-        to_plot = self.data[variable]
-        #1D animation
-        if self.data_dim==2:
-            new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
-            to_plot = to_plot.reshape(new_shape)
-            fig = plt.figure()
-            ax = plt.axes(xlim=(0, new_shape[1]), ylim=(0, to_plot[0].max()))
-            ax.set_xlabel('x')
-            ax.set_ylabel(variable)
-            ax.set_title('Animation of '+variable)
-            line, = ax.plot([], lw=3)
-            #plt.title('Animation of '+variable)
-            #plt.xlim(0, new_shape[1])
-            #plt.ylim(0, to_plot[0].max())
-            #plt.xlabel('x')
-            #plt.ylabel(variable)
-            #im = plt.plot(to_plot[0], animated=True)
-            
-            def init():
-                line.set_data([])
-                return line,
-            
-            def animate(i):
-                line.set_data(to_plot[i])
-                return line,
-
-            def update_fig(i):
-                im.set_array(to_plot[i])
-                return im,
-
-            #anim = FuncAnimation(fig, update_fig, blit=True)
-            anim = FuncAnimation(fig, animate, init_func=init, blit=True)
-            if save_as:
-                anim.save(save_as)
-            plt.show()
-            
-        #2D animation
-        elif self.data_dim==1:
-
-            new_shape = tuple(filter(lambda x: x>1, to_plot.shape))
-            to_plot = to_plot.reshape(new_shape)
-
-            fig = plt.figure()
-            plt.title('Animation of '+variable)
-            plt.xlim(0, 100)
-            plt.ylim(0, 100)
-            plt.xlabel('x')
-            plt.ylabel('y')
-            im = plt.imshow(to_plot[0], animated=True)
-
-            def update_fig(i):
-                im.set_array(to_plot[i])
-                return im,
-
-            anim = FuncAnimation(fig, update_fig, blit=True)
-            if save_as:
-                anim.save(save_as)
-            plt.show()
-
         else:
             print('plot() only supports visualisation of 1D and 2D data')
 

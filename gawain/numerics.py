@@ -69,10 +69,9 @@ class SolutionVector:
         
     def calculate_timestep(self):
         cs_max = self.sound_speed().max()
-        
-        dt = self.cfl*self.dx/cs_max
-        self.timestep = dt
-        
+        timestep_x = self.cfl*self.dx/cs_max
+        timestep_y = self.cfl*self.dy/cs_max
+        self.timestep = min(timestep_x, timestep_y)
         return self.timestep
 
     def set_centroid(self, array):
@@ -206,6 +205,7 @@ class SolutionVector:
         return self.data[2]
     def momZ(self):
         return self.data[3]
+      
         
     def velX(self):
         return self.data[1]/self.data[0]
@@ -224,5 +224,6 @@ class SolutionVector:
         return pressure
         
     def sound_speed(self):
-        
         return np.sqrt(self.adi_idx*self.pressure()/self.dens())
+
+

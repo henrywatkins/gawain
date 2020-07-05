@@ -1,15 +1,19 @@
 ''' test file for input '''
 
 import numpy as np
-import pickle
+from gawain.main import run_gawain
 
-run_name = "sedov_blast_wave"
+run_name = "blast_wave"
+output_dir = "."
 
-cfl = 0.1
+cfl = 0.01
 
 with_gpu = False
+with_mhd = False
+with_thermal_conductivity = False
+with_resistivity = False
 
-t_max = 1.0
+t_max = 0.04
 
 # "euler", "rk2", "leapfrog", "predictor-corrector"
 integrator = "euler"
@@ -18,51 +22,46 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 100, 150, 1
+nx, ny, nz = 400, 1, 1
 
 mesh_shape = (nx, ny, nz)
 
 n_outputs = 100
 
-lx, ly, lz = 1.0, 1.5, 0.001
+lx, ly, lz = 1.0, 0.001, 0.001
 
 mesh_size = (lx, ly, lz)
 
-x = np.linspace(-lx/2., lx/2.,num=nx)
-y = np.linspace(-ly/2., ly/2.,num=ny)
+x = np.linspace(0.0, lx,num=nx)
+y = np.linspace(0.0, ly,num=ny)
 z = np.linspace(0.0, lz,num=nz)
 X,Y,Z =np.meshgrid(x,y,z, indexing='ij')
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 5.0/3.0
+adiabatic_idx = 7.0/5.0
 
 rho = np.ones(X.shape)
 
-R = np.sqrt(X**2+Y**2)
-
-pressure = np.piecewise(R, [R < 0.1, R >= 0.1], [10.0, 0.1])
+pressure = np.piecewise(X, [X < lx/10.0, (X >= lx/10.0  )&(X<=9*lx/10.0), X>9*lx/10.0], [1000.0, 0.01,100.0])
 
 mx = np.zeros(X.shape)
 my = mx
 mz = mx
 
-e = pressure/(adiabatic_idx-1.) + mx*mx/rho
+e = pressure/(adiabatic_idx-1) + mx*mx/rho
 
 initial_condition = np.array([rho, mx, my, mz, e])
 
 ############## BOUNDARY CONDITION ######################
-# available types: periodic, fixed
-boundary_conditions = ['periodic', 'periodic', 'periodic']
+# available types: periodic, fixed, reflective
+boundary_conditions = ['reflective', 'periodic', 'periodic']
 
 ############## DO NOT EDIT BELOW ############################
 param_dict = {"run_name":run_name,"cfl":cfl, "mesh_shape":mesh_shape,
               "mesh_size":mesh_size, "t_max":t_max, "n_dumps":n_outputs,
               "using_gpu":with_gpu, "initial_con":initial_condition,
               "bound_cons":boundary_conditions, "adi_idx":adiabatic_idx,
-              "integrator":integrator, "fluxer":fluxer}
+              "integrator":integrator, "fluxer":fluxer, "output_dir":output_dir}
 
-param_filename = run_name+".pkl"
-
-with open(param_filename, 'wb') as file:
-    pickle.dump(param_dict, file)
+run_gawain(param_dict)

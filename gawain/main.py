@@ -25,17 +25,12 @@ preamble = """
 Simulation parameters:
 """
 
-@plac.annotations(
-        input_file=("Input runfile path", "positional", None, str),
-        output_path=("Output folder path", "option", "o", str),
-)
 
-
-def main(input_file, output_path=None):
+def run_gawain(input_file):
 
     print(preamble)
 
-    params = io.Parameters(from_file=input_file)
+    params = io.Parameters(input_file)
     solution = nu.SolutionVector()
     solution.set_state(params)
     integrator = params.integrator_type(solution, params)
@@ -54,8 +49,3 @@ def main(input_file, output_path=None):
 
 
     print('\nSimulation Complete, duration:', clock.duration(), 'seconds')
-
-
-
-if __name__ == "__main__":
-    plac.call(main)
