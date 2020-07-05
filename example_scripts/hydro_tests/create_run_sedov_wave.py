@@ -5,7 +5,7 @@ import pickle
 
 run_name = "sedov_blast_wave"
 
-cfl = 0.01
+cfl = 0.1
 
 with_gpu = False
 

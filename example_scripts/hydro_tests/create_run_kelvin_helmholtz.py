@@ -5,7 +5,7 @@ import pickle
 
 run_name = "kelvin_helmholtz"
 
-cfl = 0.01
+cfl = 0.1
 
 with_gpu = False
 
@@ -35,18 +35,21 @@ X,Y,Z =np.meshgrid(x,y,z, indexing='ij')
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 1.4#5.0/3.0
+adiabatic_idx = 1.4
 
 rho = np.piecewise(Y, [np.absolute(Y)>0.25, np.absolute(Y)<=0.25], [1.0,2.0])
 vx = np.piecewise(Y, [np.absolute(Y)>0.25, np.absolute(Y)<=0.25], [-0.5,0.5])
 vy = np.zeros(X.shape)
-a = -0.01
-b = 0.01
-seed = a+(b-a)*np.random.random(X.shape)
+a = -0.1
+b = 0.1
+
+seed1 = a+(b-a)*np.random.random(X.shape)
+seed2 = a+(b-a)*np.random.random(X.shape)
+
 pressure = 2.5*np.ones(X.shape)
 
-mx = rho*vx*(1.0 + seed)
-my = rho*vy*(1.0 + seed)
+mx = rho*vx*(1.0 + seed1)
+my = rho*vy*(1.0 + seed2)
 mz = np.zeros(X.shape)
 
 e = pressure/(adiabatic_idx-1.) + mx*mx/rho
