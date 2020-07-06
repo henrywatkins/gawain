@@ -25,16 +25,9 @@ class Output:
         file_name = self.save_dir+'/gawain_output_'+str(self.dump_no)+'.h5'
         self.dump_no+=1
         with h5py.File(file_name, 'w') as file:
-            to_output = SolutionVector.dens()
-            dataset = file.create_dataset('density', data=to_output, dtype='f')
-            to_output = SolutionVector.momX()
-            dataset = file.create_dataset('xmomentum', data=to_output, dtype='f')
-            to_output = SolutionVector.momY()
-            dataset = file.create_dataset('ymomentum', data=to_output, dtype='f')
-            to_output = SolutionVector.energy()
-            dataset = file.create_dataset('energy', data=to_output, dtype='f')
-            to_output = SolutionVector.momTotalSqr()
-            dataset = file.create_dataset('sqrmomentum', data=to_output, dtype='f')
+            for variable in SolutionVector.variable_names:
+                to_output = SolutionVector.get_variable(variable)
+                dataset = file.create_dataset(variable, data=to_output, dtype='f')
 
 
 
@@ -49,7 +42,6 @@ class Parameters:
         self.t_max = None
         self.n_outputs = None
         self.adi_idx = None
-        self.with_gpu = False
         self.initial_condition = None
         self.boundary_type = None
         self.boundary_value = [None,None,None]
@@ -65,7 +57,6 @@ class Parameters:
         self.mesh_size = dict_input['mesh_size']
         self.t_max = dict_input['t_max']
         self.n_outputs = dict_input['n_dumps']
-        self.using_gpu = dict_input['using_gpu']
         self.initial_condition = dict_input['initial_con']
         self.boundary_type = dict_input['bound_cons']
         self.run_name = dict_input['run_name']
@@ -123,18 +114,23 @@ class Parameters:
 class Reader:
     def __init__(self, run_dir_path):
         self.file_path = run_dir_path
-        self.variables = ['density','xmomentum','ymomentum','sqrmomentum', 'energy']
-        self.data = {variable:[] for variable in self.variables}
+        self.data = {}
         files = os.listdir(self.file_path)
         for num in range(len(files)):
             filename = self.file_path+'/gawain_output_'+str(num)+'.h5'
             file = h5py.File(filename, 'r')
-            for variable in self.variables:
+            for variable in file.keys():
                 file_data = np.array(file[variable])
-                self.data[variable].append(file_data)
-        for variable in self.variables:
+                if variable in self.data.keys():
+                    self.data[variable].append(file_data)
+                else:
+                    self.data[variable] = [file_data]
+                    
+        for variable in self.data.keys():
             self.data[variable] = np.array(self.data[variable])
         self.data_dim = self.data['density'].shape.count(1)
+        
+        self.variables = self.data.keys()
 
     def plot(self, variable, timesteps=[0], save_as=None):
         to_plot = self.data[variable]

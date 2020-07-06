@@ -47,6 +47,7 @@ class SolutionVector:
         self.adi_idx = 1.4
         self.timestep = 0.0001
         self.cfl = 0.1
+        self.variable_names = ['density','xmomentum','ymomentum','zmomentum','energy']
         
     def set_state(self, Parameters):
         self.boundary_type = Parameters.boundary_type
@@ -79,6 +80,10 @@ class SolutionVector:
 
     def centroid(self):
         return self.data
+    
+    def get_variable(self, variable_name):
+        index = self.variable_names.index(variable_name)
+        return self.data[index]
 
     def plusX(self, n=1):
         rolled = np.roll(self.data, n, axis=1)

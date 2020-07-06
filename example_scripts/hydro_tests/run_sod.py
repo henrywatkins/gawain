@@ -7,8 +7,6 @@ run_name = "sod_shock_tube"
 output_dir = "."
 
 cfl = 0.5
-
-with_gpu = False
 with_mhd = False
 with_thermal_conductivity = False
 with_resistivity = False
