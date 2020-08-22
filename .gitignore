@@ -1,0 +1,8 @@
+# cache files
+__pycache__/
+
+# dist files
+*.egg-info/
+
+# data files
+*.h5
