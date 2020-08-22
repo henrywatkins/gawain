@@ -1,10 +1,10 @@
-'''
+"""
         GAWAIN
 
     A small python R-MHD code for
     education and experimentation
 
-'''
+"""
 
 import sys
 import plac
@@ -13,7 +13,7 @@ import gawain.io as io
 import gawain.numerics as nu
 
 
-preamble = """
+PREAMBLE = """
    ______                     _
   / ____/___ __      ______ _(_)___
  / / __/ __ `/ | /| / / __ `/ / __ |
@@ -26,11 +26,11 @@ Simulation parameters:
 """
 
 
-def run_gawain(input_file):
+def run_gawain(**kwargs):
 
-    print(preamble)
+    print(PREAMBLE)
 
-    params = io.Parameters(input_file)
+    params = io.Parameters(**kwargs)
     solution = nu.SolutionVector()
     solution.set_state(params)
     integrator = params.integrator_type(solution, params)
@@ -47,5 +47,4 @@ def run_gawain(input_file):
 
         clock.tick(dt)
 
-
-    print('\nSimulation Complete, duration:', clock.duration(), 'seconds')
+    print("\nSimulation Complete, duration:", clock.duration(), "seconds")
