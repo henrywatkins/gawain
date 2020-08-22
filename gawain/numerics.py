@@ -371,10 +371,15 @@ class MHDSolutionVector(SolutionVector):
         )
         return np.array([in_x, in_y, in_z])
 
-    # TODO - complete timestep calc
     def calculate_timestep(self):
-        cs_max = self.sound_speed().max()
-        timestep_x = self.cfl * self.dx / cs_max
-        timestep_y = self.cfl * self.dy / cs_max
+        ca_max = self.alfven_speed().max()
+        cs = self.slow_magnetosonic_speed()
+        cf = self.fast_magnetosonic_speed()
+        csx_max, csy_max = np.abs(cs[0]).max(), np.abs(cs[1]).max()
+        cfx_max, cfy_max = np.abs(cf[0]).max(), np.abs(cf[1]).max()
+        cx_max = max(ca_max, csx_max, cfx_max)
+        cy_max = max(ca_max, csy_max, cfy_max)
+        timestep_x =  self.dx / cx_max
+        timestep_y =  self.dy / cy_max
         self.timestep = min(timestep_x, timestep_y)
-        return self.timestep
+        return self.cfl * self.timestep

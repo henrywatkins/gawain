@@ -6,3 +6,7 @@ __pycache__/
 
 # data files
 *.h5
+
+# ipynb checkpoints
+example_scripts/.ipynb_checkpoints/
+gawain/.ipynb_checkpoints/
