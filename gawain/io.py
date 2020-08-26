@@ -9,7 +9,7 @@ from matplotlib import rc
 from matplotlib import rcParams
 import h5py
 
-import gawain.numerics as nu
+#import gawain.numerics as nu
 import gawain.integrators as integrator
 import gawain.fluxes as fluxes
 

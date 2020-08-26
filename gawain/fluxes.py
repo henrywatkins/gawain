@@ -1,14 +1,6 @@
 """ physics-specific routines """
 
 import numpy as np
-import sys
-
-
-def debug(array, name):
-    if not np.all(np.isfinite(array)):
-        print("inf in " + name)
-        sys.exit("error")
-
 
 def EulerFluxX(u):
     dens = u.dens()

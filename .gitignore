@@ -10,3 +10,4 @@ __pycache__/
 # ipynb checkpoints
 example_scripts/.ipynb_checkpoints/
 gawain/.ipynb_checkpoints/
+.ipynb_checkpoints
