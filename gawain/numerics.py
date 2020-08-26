@@ -379,7 +379,7 @@ class MHDSolutionVector(SolutionVector):
         cfx_max, cfy_max = np.abs(cf[0]).max(), np.abs(cf[1]).max()
         cx_max = max(ca_max, csx_max, cfx_max)
         cy_max = max(ca_max, csy_max, cfy_max)
-        timestep_x =  self.dx / cx_max
-        timestep_y =  self.dy / cy_max
+        timestep_x = self.dx / cx_max
+        timestep_y = self.dy / cy_max
         self.timestep = min(timestep_x, timestep_y)
         return self.cfl * self.timestep

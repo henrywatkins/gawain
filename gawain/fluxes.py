@@ -2,6 +2,7 @@
 
 import numpy as np
 
+
 def EulerFluxX(u):
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
