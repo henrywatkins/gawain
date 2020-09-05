@@ -161,12 +161,6 @@ class HLLFluxer(FluxCalculator):
     def __init__(self):
         super(HLLFluxer, self).__init__()
 
-    def smoothness(self, minus, mid, plus):
-        d = 0.00001
-        numer = mid - minus + d
-        denom = plus - mid + d
-        return numer / denom
-
     def superbee(self, r):
         return np.maximum(
             np.zeros(r.shape),
@@ -186,25 +180,27 @@ class HLLFluxer(FluxCalculator):
 
     def wave_speeds_X(self, Ul, Ur):
 
-        vel = Ul.velX()
-        speed = Ul.sound_speed()
-        sl = vel - speed
-        vel = Ur.velX()
-        speed = Ur.sound_speed()
-        sr = vel + speed
+        lambda_L_min, lambda_L_max = Ul.calculate_min_max_wave_speeds_X()
+        lambda_R_min, lambda_R_max = Ur.calculate_min_max_wave_speeds_X()
 
-        return sl, sr  # np.minimum(sl, sr), np.maximum(sl, sr)
+        zeros = np.zeros(lambda_L_min.shape)
+
+        return (
+            np.minimum(np.minimum(zeros, lambda_L_min), lambda_R_min),
+            np.maximum(np.maximum(zeros, lambda_L_max), lambda_R_max),
+        )
 
     def wave_speeds_Y(self, Ul, Ur):
 
-        vel = Ul.velY()
-        speed = Ul.sound_speed()
-        sl = vel - speed
-        vel = Ur.velY()
-        speed = Ur.sound_speed()
-        sr = vel + speed
+        lambda_L_min, lambda_L_max = Ul.calculate_min_max_wave_speeds_Y()
+        lambda_R_min, lambda_R_max = Ur.calculate_min_max_wave_speeds_Y()
 
-        return sl, sr  # np.minimum(sl, sr), np.maximum(sl, sr)
+        zeros = np.zeros(lambda_L_min.shape)
+
+        return (
+            np.minimum(np.minimum(zeros, lambda_L_min), lambda_R_min),
+            np.maximum(np.maximum(zeros, lambda_L_max), lambda_R_max),
+        )
 
     def hll_flux_X(self, Sl, Sr, Ul, Ur):
 

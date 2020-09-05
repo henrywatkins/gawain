@@ -33,6 +33,8 @@ class Output:
 
 class Parameters:
     def __init__(self, **kwargs):
+        self.available_fluxers = {}
+        self.availbale_integrators = {}
         self.integrator_type = None
         self.fluxer_type = None
         self.run_name = kwargs["run_name"]
@@ -77,8 +79,6 @@ class Parameters:
             self.fluxer_type = fluxes.LaxWendroffFluxer
         elif kwargs["fluxer"] == "lax-friedrichs":
             self.fluxer_type = fluxes.LaxFriedrichsFluxer
-        elif kwargs["fluxer"] == "vanleer":
-            self.fluxer_type = fluxes.VanLeerFluxer
         elif kwargs["fluxer"] == "hll":
             self.fluxer_type = fluxes.HLLFluxer
         else:

@@ -73,10 +73,27 @@ class SolutionVector:
         new_vector.timestep = self.timestep
         return new_vector
 
+    def calculate_min_max_wave_speeds_X(self):
+        xvel = self.velX()
+        cs = self.sound_speed()
+        lambda1 = xvel - cs
+        lambda2 = xvel + cs
+        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+
+    def calculate_min_max_wave_speeds_Y(self):
+        yvel = self.velY()
+        cs = self.sound_speed()
+        lambda1 = yvel - cs
+        lambda2 = yvel + cs
+        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+
     def calculate_timestep(self):
-        cs_max = self.sound_speed().max()
-        timestep_x = self.cfl * self.dx / cs_max
-        timestep_y = self.cfl * self.dy / cs_max
+        min_wave_speed_x, max_wave_speed_x = self.calculate_min_max_wave_speeds_X()
+        min_wave_speed_y, max_wave_speed_y = self.calculate_min_max_wave_speeds_Y()
+        max_in_x = max(np.abs(min_wave_speed_x).max(), np.abs(max_wave_speed_x).max())
+        max_in_y = max(np.abs(min_wave_speed_y).max(), np.abs(max_wave_speed_y).max())
+        timestep_x = self.cfl * self.dx / max_in_x
+        timestep_y = self.cfl * self.dy / max_in_y
         self.timestep = min(timestep_x, timestep_y)
         return self.timestep
 
@@ -249,6 +266,7 @@ class SolutionVector:
 
     # methods for extracting data for vector
     # data along each direction
+    ######################################
     def mom(self, dim):
         return self.data[dim + 1]
 
@@ -283,6 +301,8 @@ class SolutionVector:
         new_vector = self.copy()
         new_vector.set_centroid(rolled)
         return new_vector
+
+    ###############################################
 
 
 class MHDSolutionVector(SolutionVector):
@@ -371,15 +391,67 @@ class MHDSolutionVector(SolutionVector):
         )
         return np.array([in_x, in_y, in_z])
 
-    def calculate_timestep(self):
-        ca_max = self.alfven_speed().max()
-        cs = self.slow_magnetosonic_speed()
-        cf = self.fast_magnetosonic_speed()
-        csx_max, csy_max = np.abs(cs[0]).max(), np.abs(cs[1]).max()
-        cfx_max, cfy_max = np.abs(cf[0]).max(), np.abs(cf[1]).max()
-        cx_max = max(ca_max, csx_max, cfx_max)
-        cy_max = max(ca_max, csy_max, cfy_max)
-        timestep_x = self.dx / cx_max
-        timestep_y = self.dy / cy_max
-        self.timestep = min(timestep_x, timestep_y)
-        return self.cfl * self.timestep
+    def calculate_min_max_wave_speeds_X(self):
+        xvel = self.velX()
+        ca = self.alfven_speed()
+        cs = self.slow_magnetosonic_speed()[0]
+        cf = self.fast_magnetosonic_speed()[0]
+        lambda1 = xvel - ca
+        lambda2 = xvel + ca
+        lambda3 = xvel - cs
+        lambda4 = xvel + cs
+        lambda5 = xvel - cf
+        lambda6 = xvel + cf
+
+        return (
+            np.minimum(
+                np.minimum(
+                    np.minimum(
+                        np.minimum(np.minimum(lambda1, lambda2), lambda3), lambda4
+                    ),
+                    lambda5,
+                ),
+                lambda6,
+            ),
+            np.maximum(
+                np.maximum(
+                    np.maximum(
+                        np.maximum(np.maximum(lambda1, lambda2), lambda3), lambda4
+                    ),
+                    lambda5,
+                ),
+                lambda6,
+            ),
+        )
+
+    def calculate_min_max_wave_speeds_Y(self):
+        yvel = self.velY()
+        ca = self.alfven_speed()
+        cs = self.slow_magnetosonic_speed()[1]
+        cf = self.fast_magnetosonic_speed()[1]
+        lambda1 = yvel - ca
+        lambda2 = yvel + ca
+        lambda3 = yvel - cs
+        lambda4 = yvel + cs
+        lambda5 = yvel - cf
+        lambda6 = yvel + cf
+        return (
+            np.minimum(
+                np.minimum(
+                    np.minimum(
+                        np.minimum(np.minimum(lambda1, lambda2), lambda3), lambda4
+                    ),
+                    lambda5,
+                ),
+                lambda6,
+            ),
+            np.maximum(
+                np.maximum(
+                    np.maximum(
+                        np.maximum(np.maximum(lambda1, lambda2), lambda3), lambda4
+                    ),
+                    lambda5,
+                ),
+                lambda6,
+            ),
+        )
