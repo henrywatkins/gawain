@@ -1,13 +1,10 @@
+"""GAWAIN
+
+A small ideal-MHD code for trying out
+hyrdrodynamics and magetohydrodynamics 
+in python.
+
 """
-        GAWAIN
-
-    A small python R-MHD code for
-    education and experimentation
-
-"""
-
-import sys
-import plac
 
 import gawain.io as io
 import gawain.numerics as nu
@@ -31,7 +28,10 @@ def run_gawain(**kwargs):
     print(PREAMBLE)
 
     params = io.Parameters(**kwargs)
-    solution = nu.SolutionVector()
+    if params.with_mhd:
+        solution = nu.MHDSolutionVector()
+    else:
+        solution = nu.SolutionVector()
     solution.set_state(params)
     integrator = params.integrator_type(solution, params)
     params.print_params()

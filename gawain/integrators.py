@@ -1,4 +1,9 @@
-""" integrator classes
+"""Integrators 
+
+These integrators take a solution vector and integrate
+(update) the solution depending on some RHS; in practice
+this means taking the fluxes of the variables in and out
+of a cell and updating the cell accordingly.
 """
 
 import numpy as np
@@ -6,8 +11,8 @@ import numpy as np
 
 class Integrator:
     def __init__(self, solution_vector, parameters):
-        self.lagged_solution = solution_vector
         self.fluxer = parameters.fluxer_type()
+        self.fluxer.set_flux_function(parameters.with_mhd)
 
     def integrate(self, solution_vector):
         intermediate_rhs = self.fluxer.calculate_rhs(solution_vector)
@@ -32,6 +37,7 @@ class PredictorCorrectorIntegrator(Integrator):
 class LeapFrogIntegrator(Integrator):
     def __init__(self, solution_vector, parameters):
         super(LeapFrogIntegrator, self).__init__(solution_vector, parameters)
+        self.lagged_solution = solution_vector
 
     def integrate(self, solution_vector):
         dummy = solution_vector

@@ -1,4 +1,9 @@
-""" Numerical utilities """
+"""Numerical utilities
+
+These numerical utilities include the Clock
+time-keeping class and the base solution vector
+classes for both hydro and mhd.
+"""
 
 import time
 
@@ -318,6 +323,16 @@ class MHDSolutionVector(SolutionVector):
             "ymag",
             "zmag",
         ]
+
+    def copy(self):
+        new_vector = MHDSolutionVector()
+        new_vector.data = self.data
+        new_vector.boundary_type = self.boundary_type
+        new_vector.boundary_value = self.boundary_value
+        new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
+        new_vector.adi_idx = self.adi_idx
+        new_vector.timestep = self.timestep
+        return new_vector
 
     def magX(self):
         return self.data[5]

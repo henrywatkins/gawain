@@ -1,4 +1,10 @@
-""" Input and Output utilities """
+"""Input and Output utilities 
+
+These classes provide the means of passing the initial 
+condtitions and options of the simulation to the code, 
+the output class for dumping the simulation result, and a
+basic reading and plotting class to visualize the results.
+"""
 
 import os
 
@@ -9,7 +15,6 @@ from matplotlib import rc
 from matplotlib import rcParams
 import h5py
 
-# import gawain.numerics as nu
 import gawain.integrators as integrator
 import gawain.fluxes as fluxes
 
@@ -33,10 +38,20 @@ class Output:
 
 class Parameters:
     def __init__(self, **kwargs):
-        self.available_fluxers = {}
-        self.availbale_integrators = {}
-        self.integrator_type = None
-        self.fluxer_type = None
+        self.available_integrators = {
+            "euler": integrator.Integrator,
+            "rk2": integrator.RK2Integrator,
+            "leapfrog": integrator.LeapFrogIntegrator,
+            "predictor-corrector": integrator.PredictorCorrectorIntegrator,
+        }
+        self.available_fluxers = {
+            "base": fluxes.FluxCalculator,
+            "lax-wendroff": fluxes.LaxWendroffFluxer,
+            "lax-friedrichs": fluxes.LaxFriedrichsFluxer,
+            "hll": fluxes.HLLFluxer,
+        }
+        self.integrator_type = self.available_integrators[kwargs["integrator"]]
+        self.fluxer_type = self.available_fluxers[kwargs["fluxer"]]
         self.run_name = kwargs["run_name"]
         self.cfl = kwargs["cfl"]
         self.mesh_shape = kwargs["mesh_shape"]
@@ -60,30 +75,6 @@ class Parameters:
                     self.initial_condition.take(0, axis=i + 1),
                     self.initial_condition.take(-1, axis=i + 1),
                 ]
-
-        if kwargs["integrator"] == "euler":
-            self.integrator_type = integrator.Integrator
-        elif kwargs["integrator"] == "rk2":
-            self.integrator_type = integrator.RK2Integrator
-        elif kwargs["integrator"] == "leapfrog":
-            self.integrator_type = integrator.LeapFrogIntegrator
-        elif kwargs["integrator"] == "predictor-corrector":
-            self.integrator_type = integrator.PredictorCorrectorIntegrator
-        else:
-            print("integrator type not recognised, defalting to euler integrator")
-            self.integrator_type = integrator.Integrator
-
-        if kwargs["fluxer"] == "base":
-            self.fluxer_type = fluxes.FluxCalculator
-        elif kwargs["fluxer"] == "lax-wendroff":
-            self.fluxer_type = fluxes.LaxWendroffFluxer
-        elif kwargs["fluxer"] == "lax-friedrichs":
-            self.fluxer_type = fluxes.LaxFriedrichsFluxer
-        elif kwargs["fluxer"] == "hll":
-            self.fluxer_type = fluxes.HLLFluxer
-        else:
-            print("Fluxer not recognized, defaulting to default flux")
-            self.fluxer_type = fluxes.FluxCalculator
 
     def print_params(self):
         print("run name: ", self.run_name)

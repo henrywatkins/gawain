@@ -1,4 +1,10 @@
-""" physics-specific routines """
+"""Flux calculation routine
+
+These functions and classes are used for the
+physics-specific flux calculations for both 
+hydrodynamic and MHD fluxes
+
+"""
 
 import numpy as np
 
@@ -72,8 +78,8 @@ def MHDFluxX(u):
             (en + pressure) * momX / dens
             - (bx * momX + by * momY + bz * momZ) * bx / dens,
             (momX * bx - momX * bx) / dens,
-            (momX * by - momy * bx) / dens,
-            (momX * bz - momz * bx) / dens,
+            (momX * by - momY * bx) / dens,
+            (momX * bz - momY * bx) / dens,
         ]
     )
     return x_flux
@@ -95,8 +101,8 @@ def MHDFluxY(u):
             (en + pressure) * momY / dens
             - (bx * momX + by * momY + bz * momZ) * by / dens,
             (momY * bx - momX * by) / dens,
-            (momY * by - momy * by) / dens,
-            (momY * bz - momz * by) / dens,
+            (momY * by - momY * by) / dens,
+            (momY * bz - momZ * by) / dens,
         ]
     )
     return y_flux
@@ -133,9 +139,19 @@ class FluxCalculator:
         self.y_minus_flux = None
         self.z_plus_flux = None
         self.z_minus_flux = None
-        self.flux_functionX = EulerFluxX
-        self.flux_functionY = EulerFluxY
-        self.flux_functionZ = EulerFluxZ
+        self.flux_functionX = None
+        self.flux_functionY = None
+        self.flux_functionZ = None
+
+    def set_flux_function(self, with_mhd):
+        if with_mhd:
+            self.flux_functionX = MHDFluxX
+            self.flux_functionY = MHDFluxY
+            self.flux_functionZ = MHDFluxZ
+        else:
+            self.flux_functionX = EulerFluxX
+            self.flux_functionY = EulerFluxY
+            self.flux_functionZ = EulerFluxZ
 
     def _specific_fluxes(self, u):
         pass
