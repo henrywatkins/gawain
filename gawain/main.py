@@ -23,11 +23,11 @@ Simulation parameters:
 """
 
 
-def run_gawain(**kwargs):
+def run_gawain(config):
 
     print(PREAMBLE)
 
-    params = io.Parameters(**kwargs)
+    params = io.Parameters(config)
     if params.with_mhd:
         solution = nu.MHDSolutionVector()
     else:

@@ -3,4 +3,3 @@ scipy
 pytest
 cProfile
 tqdm
-h5py

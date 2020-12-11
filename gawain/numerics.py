@@ -269,46 +269,6 @@ class SolutionVector:
     def sound_speed(self):
         return np.sqrt(self.adi_idx * self.pressure() / self.dens())
 
-    # methods for extracting data for vector
-    # data along each direction
-    ######################################
-    def mom(self, dim):
-        return self.data[dim + 1]
-
-    def vel(self, dim):
-        return self.data[dim + 1] / self.data[0]
-
-    def plus_shift(self, dim):
-        rolled = np.roll(self.data, 1, axis=dim + 1)
-        if self.boundary_type[dim] == "periodic":
-            pass
-        elif self.boundary_type[dim] == "fixed":
-            rolled[:, :, :, 0] = self.boundary_value[dim][0]
-        elif self.boundary_type[dim] == "reflective":
-            rolled[0, :, :, 0] = self.data[0, :, :, 0]
-            rolled[1, :, :, 0] = -self.data[1, :, :, 0]
-            rolled[4, :, :, 0] = self.data[4, :, :, 0]
-
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
-
-    def minus_shift(self, dim):
-        rolled = np.roll(self.data, -1, axis=dim + 1)
-        if self.boundary_type[dim] == "periodic":
-            pass
-        elif self.boundary_type[dim] == "fixed":
-            rolled[:, :, :, -1] = self.boundary_value[dim][1]
-        elif self.boundary_type[dim] == "reflective":
-            rolled[0, :, :, -1] = self.data[0, :, :, -1]
-            rolled[1, :, :, -1] = -self.data[1, :, :, -1]
-            rolled[4, :, :, -1] = self.data[4, :, :, -1]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
-
-    ###############################################
-
 
 class MHDSolutionVector(SolutionVector):
     def __init__(self):

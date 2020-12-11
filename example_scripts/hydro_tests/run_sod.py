@@ -56,16 +56,15 @@ initial_condition = np.array([rho, mx, my, mz, e])
 boundary_conditions = ["fixed", "periodic", "periodic"]
 
 ############## DO NOT EDIT BELOW ############################
-param_dict = {
+config = {
     "run_name": run_name,
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
     "t_max": t_max,
     "n_dumps": n_outputs,
-    "using_gpu": with_gpu,
-    "initial_con": initial_condition,
-    "bound_cons": boundary_conditions,
+    "initial_condition": initial_condition,
+    "boundary_type": boundary_conditions,
     "adi_idx": adiabatic_idx,
     "integrator": integrator,
     "fluxer": fluxer,
@@ -73,4 +72,4 @@ param_dict = {
     "with_mhd": with_mhd,
 }
 
-run_gawain(param_dict)
+run_gawain(config)

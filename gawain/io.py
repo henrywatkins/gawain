@@ -7,13 +7,13 @@ basic reading and plotting class to visualize the results.
 """
 
 import os
+import json
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib import rc
 from matplotlib import rcParams
-import h5py
 
 import gawain.integrators as integrator
 import gawain.fluxes as fluxes
@@ -26,18 +26,17 @@ class Output:
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
         self.dump(SolutionVector)
+        with open(self.save_dir + "/config.json", "w") as file:
+            json.dump(Parameters.config, file)
 
     def dump(self, SolutionVector):
-        file_name = self.save_dir + "/gawain_output_" + str(self.dump_no) + ".h5"
+        file_name = self.save_dir + "/gawain_output_" + str(self.dump_no) + ".npy"
         self.dump_no += 1
-        with h5py.File(file_name, "w") as file:
-            for variable in SolutionVector.variable_names:
-                to_output = SolutionVector.get_variable(variable)
-                dataset = file.create_dataset(variable, data=to_output, dtype="f")
+        np.save(file_name, SolutionVector.data)
 
 
 class Parameters:
-    def __init__(self, **kwargs):
+    def __init__(self, config):
         self.available_integrators = {
             "euler": integrator.Integrator,
             "rk2": integrator.RK2Integrator,
@@ -50,20 +49,20 @@ class Parameters:
             "lax-friedrichs": fluxes.LaxFriedrichsFluxer,
             "hll": fluxes.HLLFluxer,
         }
-        self.integrator_type = self.available_integrators[kwargs["integrator"]]
-        self.fluxer_type = self.available_fluxers[kwargs["fluxer"]]
-        self.run_name = kwargs["run_name"]
-        self.cfl = kwargs["cfl"]
-        self.mesh_shape = kwargs["mesh_shape"]
-        self.mesh_size = kwargs["mesh_size"]
-        self.t_max = kwargs["t_max"]
-        self.n_outputs = kwargs["n_outputs"]
-        self.adi_idx = kwargs["adi_idx"]
-        self.initial_condition = kwargs["initial_condition"]
-        self.boundary_type = kwargs["boundary_type"]
+        self.integrator_type = self.available_integrators[config["integrator"]]
+        self.fluxer_type = self.available_fluxers[config["fluxer"]]
+        self.run_name = config["run_name"]
+        self.cfl = config["cfl"]
+        self.mesh_shape = config["mesh_shape"]
+        self.mesh_size = config["mesh_size"]
+        self.t_max = config["t_max"]
+        self.n_outputs = config["n_dumps"]
+        self.adi_idx = config["adi_idx"]
+        self.initial_condition = config["initial_condition"]
+        self.boundary_type = config["boundary_type"]
         self.boundary_value = [[], [], []]
-        self.output_dir = kwargs["output_dir"]
-        self.with_mhd = kwargs["with_mhd"]
+        self.output_dir = config["output_dir"]
+        self.with_mhd = config["with_mhd"]
         self.cell_sizes = (
             self.mesh_size[0] / self.mesh_shape[0],
             self.mesh_size[1] / self.mesh_shape[1],
@@ -75,6 +74,8 @@ class Parameters:
                     self.initial_condition.take(0, axis=i + 1),
                     self.initial_condition.take(-1, axis=i + 1),
                 ]
+        config.pop("initial_condition", None)
+        self.config = config
 
     def print_params(self):
         print("run name: ", self.run_name)
@@ -91,23 +92,43 @@ class Parameters:
 class Reader:
     def __init__(self, run_dir_path):
         self.file_path = run_dir_path
-        self.data = {}
+        self.run_config = None
         files = os.listdir(self.file_path)
-        for num in range(len(files)):
-            filename = self.file_path + "/gawain_output_" + str(num) + ".h5"
-            file = h5py.File(filename, "r")
-            for variable in file.keys():
-                file_data = np.array(file[variable])
-                if variable in self.data.keys():
-                    self.data[variable].append(file_data)
-                else:
-                    self.data[variable] = [file_data]
+        with open(self.file_path + "/config.json", "r") as file:
+            self.run_config = json.load(file)
 
-        for variable in self.data.keys():
-            self.data[variable] = np.array(self.data[variable])
-        self.data_dim = self.data["density"].shape.count(1)
+        if self.run_config["with_mhd"]:
+            self.variables = [
+                "density",
+                "xmomentum",
+                "ymomentum",
+                "zmomentum",
+                "energy",
+                "xmag",
+                "ymag",
+                "zmag",
+            ]
+        else:
+            self.variables = [
+                "density",
+                "xmomentum",
+                "ymomentum",
+                "zmomentum",
+                "energy",
+            ]
 
-        self.variables = self.data.keys()
+        self.data_dim = self.run_config["mesh_shape"].count(1)
+
+        self.data = {variable: [] for variable in self.variables}
+
+        for i in range(self.run_config["n_dumps"]):
+            filename = self.file_path + "/gawain_output_" + str(i) + ".npy"
+            filedata = np.load(filename)
+            for j, variable in enumerate(self.variables):
+                self.data[variable].append(filedata[j])
+
+        for variable in self.variables:
+            self.data[variable] = np.stack(self.data[variable])
 
     def plot(self, variable, timesteps=[0], save_as=None):
         to_plot = self.data[variable]

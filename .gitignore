@@ -6,6 +6,8 @@ __pycache__/
 
 # data files
 *.h5
+*.npz
+*.npy
 
 # ipynb checkpoints
 example_scripts/.ipynb_checkpoints/
