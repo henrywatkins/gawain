@@ -26,6 +26,13 @@ class Output:
         with open(self.save_dir + "/config.json", "w") as file:
             json.dump(Parameters.config, file)
 
+        np.save(self.save_dir + "/initial_condition.npy", Parameters.initial_condition)
+
+        if Parameters.source_data is not None:
+            np.save(
+                self.save_dir + "/source_function_field.npy", Parameters.source_data
+            )
+
     def dump(self, SolutionVector):
         file_name = self.save_dir + "/gawain_output_" + str(self.dump_no) + ".npy"
         self.dump_no += 1
@@ -156,7 +163,9 @@ class Reader:
         for variable in self.variables:
             self.data[variable] = np.stack(self.data[variable])
 
-    def plot(self, variable, timesteps=[0], save_as=None):
+    def plot(
+        self, variable, timesteps=[0], save_as=None,
+    ):
         to_plot = self.data[variable]
         # 1D runs
         if self.data_dim == 2:
@@ -165,7 +174,7 @@ class Reader:
             fig, ax = plt.subplots()
             ax.set_title("Plot of " + variable)
             ax.set_xlim(0, new_shape[1])
-            ax.set_ylim(0, to_plot[0].max())
+            ax.set_ylim(0, to_plot.max())
             ax.set_xlabel("x")
             ax.set_ylabel(variable)
             for step in timesteps:
