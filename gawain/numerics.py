@@ -115,116 +115,86 @@ class SolutionVector:
     def plusX(self, n=1):
         rolled = np.roll(self.data, n, axis=1)
         if self.boundary_type[0] == "periodic":
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+            pass
         elif self.boundary_type[0] == "fixed":
             rolled[:, 0] = self.boundary_value[0][0]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
         elif self.boundary_type[0] == "reflective":
             rolled[0, 0] = self.data[0, 0]
             rolled[1, 0] = -self.data[1, 0]
             rolled[4, 0] = self.data[4, 0]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def minusX(self, n=1):
         rolled = np.roll(self.data, -n, axis=1)
         if self.boundary_type[0] == "periodic":
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+            pass
         elif self.boundary_type[0] == "fixed":
             rolled[:, -1] = self.boundary_value[0][1]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
         elif self.boundary_type[0] == "reflective":
             rolled[0, -1] = self.data[0, -1]
             rolled[1, -1] = -self.data[1, -1]
             rolled[4, -1] = self.data[4, -1]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def plusY(self, n=1):
         rolled = np.roll(self.data, n, axis=2)
         if self.boundary_type[1] == "periodic":
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+            pass
         elif self.boundary_type[1] == "fixed":
             rolled[:, :, 0] = self.boundary_value[1][0]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
         elif self.boundary_type[1] == "reflective":
             rolled[0, :, 0] = self.data[0, :, 0]
             rolled[1, :, 0] = -self.data[1, :, 0]
             rolled[4, :, 0] = self.data[4, :, 0]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def minusY(self, n=1):
         rolled = np.roll(self.data, -n, axis=2)
         if self.boundary_type[1] == "periodic":
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+            pass
         elif self.boundary_type[1] == "fixed":
             rolled[:, :, -1] = self.boundary_value[1][1]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
         elif self.boundary_type[1] == "reflective":
             rolled[0, :, -1] = self.data[0, :, -1]
             rolled[1, :, -1] = -self.data[1, :, -1]
             rolled[4, :, -1] = self.data[4, :, -1]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def plusZ(self, n=1):
         rolled = np.roll(self.data, n, axis=3)
         if self.boundary_type[2] == "periodic":
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+            pass
         elif self.boundary_type[2] == "fixed":
             rolled[:, :, :, 0] = self.boundary_value[2][0]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
         elif self.boundary_type[2] == "reflective":
             rolled[0, :, :, 0] = self.data[0, :, :, 0]
             rolled[1, :, :, 0] = -self.data[1, :, :, 0]
             rolled[4, :, :, 0] = self.data[4, :, :, 0]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def minusZ(self, n=1):
         rolled = np.roll(self.data, -n, axis=3)
         if self.boundary_type[2] == "periodic":
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+            pass
         elif self.boundary_type[2] == "fixed":
             rolled[:, :, :, -1] = self.boundary_value[2][1]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
         elif self.boundary_type[2] == "reflective":
             rolled[0, :, :, -1] = self.data[0, :, :, -1]
             rolled[1, :, :, -1] = -self.data[1, :, :, -1]
             rolled[4, :, :, -1] = self.data[4, :, :, -1]
-            new_vector = self.copy()
-            new_vector.set_centroid(rolled)
-            return new_vector
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def update(self, array):
         self.data += self.timestep * array

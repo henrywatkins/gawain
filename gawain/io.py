@@ -46,6 +46,7 @@ class Parameters:
         self.n_outputs = config["n_dumps"]
         self.adi_idx = config["adi_idx"]
         self.initial_condition = config["initial_condition"]
+        self.source_data = config["source"] if "source" in config.keys() else None
         self.boundary_type = config["boundary_type"]
         self.boundary_value = [[], [], []]
         self.output_dir = config["output_dir"]
@@ -62,6 +63,7 @@ class Parameters:
                     self.initial_condition.take(-1, axis=i + 1),
                 ]
         config.pop("initial_condition", None)
+        config.pop("source", None)
         self.config = config
 
     def create_integrator(self):
@@ -90,6 +92,16 @@ class Parameters:
                     self.available_fluxers
                 )
             )
+
+    def create_source(self):
+        if self.source_data is not None:
+            if self.source_data.shape == self.initial_condition.shape:
+                return self.source_data
+            else:
+                raise TypeError(
+                    "source data has inappropriate mesh shape, it must be the same shape as initial condition mesh shape"
+                )
+        return self.source_data
 
     def print_params(self):
         print("run name: ", self.run_name)
