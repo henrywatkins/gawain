@@ -33,7 +33,7 @@ def run_gawain(config):
     else:
         solution = nu.SolutionVector()
     solution.set_state(params)
-    integrator = params.integrator_type(solution, params)
+    integrator = params.create_integrator()
     params.print_params()
     output = io.Output(params, solution)
     clock = nu.Clock(params)

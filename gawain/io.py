@@ -11,9 +11,6 @@ import json
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib import rc
-from matplotlib import rcParams
 
 import gawain.integrators as integrator
 import gawain.fluxes as fluxes
@@ -37,20 +34,10 @@ class Output:
 
 class Parameters:
     def __init__(self, config):
-        self.available_integrators = {
-            "euler": integrator.Integrator,
-            "rk2": integrator.RK2Integrator,
-            "leapfrog": integrator.LeapFrogIntegrator,
-            "predictor-corrector": integrator.PredictorCorrectorIntegrator,
-        }
-        self.available_fluxers = {
-            "base": fluxes.FluxCalculator,
-            "lax-wendroff": fluxes.LaxWendroffFluxer,
-            "lax-friedrichs": fluxes.LaxFriedrichsFluxer,
-            "hll": fluxes.HLLFluxer,
-        }
-        self.integrator_type = self.available_integrators[config["integrator"]]
-        self.fluxer_type = self.available_fluxers[config["fluxer"]]
+        self.available_integrators = ["euler"]
+        self.available_fluxers = ["base", "lax-wendroff", "lax-friedrichs", "hll"]
+        self.integrator_type = config["integrator"]
+        self.fluxer_type = config["fluxer"]
         self.run_name = config["run_name"]
         self.cfl = config["cfl"]
         self.mesh_shape = config["mesh_shape"]
@@ -76,6 +63,33 @@ class Parameters:
                 ]
         config.pop("initial_condition", None)
         self.config = config
+
+    def create_integrator(self):
+        if self.integrator_type in self.available_integrators:
+            return integrator.Integrator(self)
+        else:
+            raise KeyError(
+                "Integrator not available, only the following type are available: {}".format(
+                    self.available_integrators
+                )
+            )
+
+    def create_fluxer(self):
+        if self.fluxer_type in self.available_fluxers:
+            if self.fluxer_type == "base":
+                return fluxes.FluxCalculator()
+            elif self.fluxer_type == "hll":
+                return fluxes.HLLFluxer()
+            elif self.fluxer == "lax-wendroff":
+                return fluxes.LaxWendroffFluxer()
+            elif self.fluxer == "lax-friedrichs":
+                return fluxes.LaxFriedrichsFluxer()
+        else:
+            raise KeyError(
+                "Fluxer not available, only the following type are available: {}".format(
+                    self.available_fluxers
+                )
+            )
 
     def print_params(self):
         print("run name: ", self.run_name)
