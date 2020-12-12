@@ -126,7 +126,6 @@ class Reader:
     def __init__(self, run_dir_path):
         self.file_path = run_dir_path
         self.run_config = None
-        files = os.listdir(self.file_path)
         with open(self.file_path + "/config.json", "r") as file:
             self.run_config = json.load(file)
 
