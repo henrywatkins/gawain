@@ -1,19 +1,17 @@
-"""Linear wave MHD test script
-
-This test aims to simulate a linear wave.
+"""Orszag-Tang vortex MHD test script
 """
 
 import numpy as np
-import scipy.constants as cnst
+from scipy.constants import pi as PI
 from gawain.main import run_gawain
 
-run_name = "linear_wave"
+run_name = "orszag_tang"
 output_dir = "."
 
-cfl = 0.5
+cfl = 0.25
 with_mhd = True
 
-t_max = 2.0
+t_max = 0.5
 
 integrator = "euler"
 # "base", "lax-wendroff", "lax-friedrichs", "vanleer", "hll"
@@ -21,13 +19,13 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 100, 1, 1
+nx, ny, nz = 128, 128, 1
 
 mesh_shape = (nx, ny, nz)
 
 n_outputs = 100
 
-lx, ly, lz = 1, 0.001, 0.001
+lx, ly, lz = 1, 1, 0.001
 
 mesh_size = (lx, ly, lz)
 
@@ -42,30 +40,26 @@ adiabatic_idx = 5 / 3
 
 rho = np.ones(mesh_shape)
 
-mx = np.zeros(mesh_shape)
-my = np.zeros(mesh_shape)
+mx = -np.sin(2 * PI * Y)
+my = np.sin(2 * PI * X)
 mz = np.zeros(mesh_shape)
 
-bx = np.ones(mesh_shape) / np.sqrt(4 * cnst.pi)
-by = np.sqrt(2) * np.ones(mesh_shape) / np.sqrt(4 * cnst.pi)
-bz = 0.5 * np.ones(mesh_shape) / np.sqrt(4 * cnst.pi)
+B0 = 1 / adiabatic_idx
 
-pressure = np.ones(mesh_shape) / adiabatic_idx + 0.5 * (bx * bx + by * by + bz * bz)
+bx = -B0 * np.sin(2 * PI * Y)
+by = B0 * np.sin(4 * PI * X)
+bz = np.zeros(mesh_shape)
 
-e = pressure / (adiabatic_idx - 1) + 0.5 * (mx * mx + my * my + mz * mz) / rho
+pressure = np.ones(mesh_shape) / adiabatic_idx
+mag_pressure = 0.5 * (bx ** 2 + by ** 2 + bz ** 2)
 
-constant = np.array([rho, mx, my, mz, e, bx, by, bz])
-
-Ra = np.array([0.00, 0.00, -3.33e-1, 9.43e-1, 0.00, 0.00, -3.33e-1, 9.43e-1])
-Rfms = np.array([4.47e-1, -8.94e-1, 4.21e-1, 1.49e-1, 2.01, 0.00, 8.43e-1, 2.98e-1])
-Rsms = np.array(
-    [8.94e-1, -4.47e-1, -8.43e-1, -2.98e-1, 6.7e-1, 0.00, -4.21e-1, -1.49e-1]
+e = (
+    pressure / (adiabatic_idx - 1)
+    + 0.5 * (mx * mx + my * my + mz * mz) / rho
+    + mag_pressure
 )
 
-perturbation = 1e-4 * np.sin(2 * cnst.pi * X)
-dU = np.array([d * perturbation for d in Rfms])
-
-initial_condition = constant + dU
+initial_condition = np.array([rho, mx, my, mz, e, bx, by, bz])
 
 ############## BOUNDARY CONDITION ######################
 # available types: periodic, fixed

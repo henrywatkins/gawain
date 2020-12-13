@@ -162,9 +162,7 @@ class Reader:
         for variable in self.variables:
             self.data[variable] = np.stack(self.data[variable])
 
-    def plot(
-        self, variable, timesteps=[0], save_as=None,
-    ):
+    def plot(self, variable, timesteps=[0], save_as=None, vmax=1, vmin=0):
         to_plot = self.data[variable]
         # 1D runs
         if self.data_dim == 2:
@@ -173,7 +171,7 @@ class Reader:
             fig, ax = plt.subplots()
             ax.set_title("Plot of " + variable)
             ax.set_xlim(0, new_shape[1])
-            ax.set_ylim(to_plot.min(), to_plot.max())
+            ax.set_ylim(vmin, vmax)
             ax.set_xlabel("x")
             ax.set_ylabel(variable)
             for step in timesteps:
@@ -195,10 +193,7 @@ class Reader:
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
                 subplot.pcolormesh(
-                    to_plot[step],
-                    vmin=to_plot[0].min(),
-                    vmax=to_plot[0].max(),
-                    cmap="plasma",
+                    to_plot[step], vmin=vmin, vmax=vmax, cmap="plasma",
                 )
                 subplot.set_xlim(0, new_shape[2])
                 subplot.set_ylim(0, new_shape[1])
