@@ -221,19 +221,14 @@ class SolutionVector:
         return self.data[3] / self.data[0]
 
     def momTotalSqr(self):
-        return (
-            self.data[1] * self.data[1]
-            + self.data[2] * self.data[2]
-            + self.data[3] * self.data[3]
-        )
+        return self.data[1] ** 2 + self.data[2] ** 2 + self.data[3] ** 2
 
     def energy(self):
         return self.data[4]
 
     def pressure(self):
-        adi_minus1 = self.adi_idx - 1.0
         thermal_en = self.energy() - 0.5 * self.momTotalSqr() / self.dens()
-        pressure = adi_minus1 * thermal_en
+        pressure = (self.adi_idx - 1.0) * thermal_en
         return pressure
 
     def sound_speed(self):
@@ -274,129 +269,52 @@ class MHDSolutionVector(SolutionVector):
         return self.data[7]
 
     def magTotalSqr(self):
-        return (
-            self.data[5] * self.data[5]
-            + self.data[6] * self.data[6]
-            + self.data[7] * self.data[7]
-        )
+        return self.data[5] ** 2 + self.data[6] ** 2 + self.data[7] ** 2
 
     def magnetic_pressure(self):
-        return self.magTotalSqr() / 2.0
+        return self.magTotalSqr() * 0.5
 
     def pressure(self):
-        adi_minus1 = self.adi_idx - 1.0
         thermal_en = (
             self.energy()
             - 0.5 * self.momTotalSqr() / self.dens()
             - self.magnetic_pressure()
         )
-        pressure = adi_minus1 * thermal_en
+        pressure = (self.adi_idx - 1.0) * thermal_en
         return pressure
+
+    def total_pressure(self):
+        return self.pressure() + self.magnetic_pressure()
 
     def alfven_speed(self):
         return np.sqrt(self.magTotalSqr() / self.dens())
 
-    def fast_magnetosonic_speed(self):
-        gamma_pressure = self.adi_idx * self.pressure()
-        b = gamma_pressure + self.magTotalSqr()
-        in_x = (
-            0.5
-            * (b + np.sqrt(b ** 2 - 4 * gamma_pressure * self.magX() * self.magX()))
-            / self.dens()
-        )
-        in_y = (
-            0.5
-            * (b + np.sqrt(b ** 2 - 4 * gamma_pressure * self.magY() * self.magY()))
-            / self.dens()
-        )
-        in_z = (
-            0.5
-            * (b + np.sqrt(b ** 2 - 4 * gamma_pressure * self.magZ() * self.magZ()))
-            / self.dens()
-        )
-        return np.array([in_x, in_y, in_z])
+    def fast_magnetosonic_speed_X(self):
+        va2 = self.alfven_speed() ** 2
+        vs2 = self.sound_speed() ** 2
+        vax2 = self.magX() ** 2 / self.dens()
+        quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vax2 * vs2)
+        return np.sqrt(0.5 * quad)
 
-    def slow_magnetosonic_speed(self):
-        gamma_pressure = self.adi_idx * self.pressure()
-        b = gamma_pressure + self.magTotalSqr()
-        in_x = (
-            0.5
-            * (b - np.sqrt(b ** 2 - 4 * gamma_pressure * self.magX() * self.magX()))
-            / self.dens()
-        )
-        in_y = (
-            0.5
-            * (b - np.sqrt(b ** 2 - 4 * gamma_pressure * self.magY() * self.magY()))
-            / self.dens()
-        )
-        in_z = (
-            0.5
-            * (b - np.sqrt(b ** 2 - 4 * gamma_pressure * self.magZ() * self.magZ()))
-            / self.dens()
-        )
-        return np.array([in_x, in_y, in_z])
+    def fast_magnetosonic_speed_Y(self):
+        va2 = self.alfven_speed() ** 2
+        vs2 = self.sound_speed() ** 2
+        vay2 = self.magY() ** 2 / self.dens()
+        quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vay2 * vs2)
+        return np.sqrt(0.5 * quad)
 
     def calculate_min_max_wave_speeds_X(self):
         xvel = self.velX()
-        ca = self.alfven_speed()
-        cs = self.slow_magnetosonic_speed()[0]
-        cf = self.fast_magnetosonic_speed()[0]
-        lambda1 = xvel - ca
-        lambda2 = xvel + ca
-        lambda3 = xvel - cs
-        lambda4 = xvel + cs
-        lambda5 = xvel - cf
-        lambda6 = xvel + cf
+        cf = self.fast_magnetosonic_speed_X()
+        lambda1 = xvel - cf
+        lambda2 = xvel + cf
 
-        return (
-            np.minimum(
-                np.minimum(
-                    np.minimum(
-                        np.minimum(np.minimum(lambda1, lambda2), lambda3), lambda4
-                    ),
-                    lambda5,
-                ),
-                lambda6,
-            ),
-            np.maximum(
-                np.maximum(
-                    np.maximum(
-                        np.maximum(np.maximum(lambda1, lambda2), lambda3), lambda4
-                    ),
-                    lambda5,
-                ),
-                lambda6,
-            ),
-        )
+        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
     def calculate_min_max_wave_speeds_Y(self):
         yvel = self.velY()
-        ca = self.alfven_speed()
-        cs = self.slow_magnetosonic_speed()[1]
-        cf = self.fast_magnetosonic_speed()[1]
-        lambda1 = yvel - ca
-        lambda2 = yvel + ca
-        lambda3 = yvel - cs
-        lambda4 = yvel + cs
-        lambda5 = yvel - cf
-        lambda6 = yvel + cf
-        return (
-            np.minimum(
-                np.minimum(
-                    np.minimum(
-                        np.minimum(np.minimum(lambda1, lambda2), lambda3), lambda4
-                    ),
-                    lambda5,
-                ),
-                lambda6,
-            ),
-            np.maximum(
-                np.maximum(
-                    np.maximum(
-                        np.maximum(np.maximum(lambda1, lambda2), lambda3), lambda4
-                    ),
-                    lambda5,
-                ),
-                lambda6,
-            ),
-        )
+        cf = self.fast_magnetosonic_speed_Y()
+        lambda1 = yvel - cf
+        lambda2 = yvel + cf
+
+        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)

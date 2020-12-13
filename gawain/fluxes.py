@@ -66,20 +66,20 @@ def MHDFluxX(u):
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
-    pressure = u.pressure()
+    tpressure = u.total_pressure()
     bx, by, bz = u.magX(), u.magY(), u.magZ()
-
+    zeros = np.zeros(dens.shape)
     x_flux = np.array(
         [
             momX,
-            momX * momX / dens - bx * bx + pressure,
+            momX * momX / dens - bx * bx + tpressure,
             momX * momY / dens - bx * by,
             momX * momZ / dens - bx * bz,
-            (en + pressure) * momX / dens
+            (en + tpressure) * momX / dens
             - (bx * momX + by * momY + bz * momZ) * bx / dens,
-            (momX * bx - momX * bx) / dens,
+            zeros,
             (momX * by - momY * bx) / dens,
-            (momX * bz - momY * bx) / dens,
+            (momX * bz - momZ * bx) / dens,
         ]
     )
     return x_flux
@@ -89,19 +89,19 @@ def MHDFluxY(u):
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
-    pressure = u.pressure()
+    tpressure = u.total_pressure()
     bx, by, bz = u.magX(), u.magY(), u.magZ()
-
+    zeros = np.zeros(dens.shape)
     y_flux = np.array(
         [
             momY,
             momY * momX / dens - by * bx,
-            momY * momY / dens - by * by + pressure,
+            momY * momY / dens - by * by + tpressure,
             momY * momZ / dens - by * bz,
-            (en + pressure) * momY / dens
+            (en + tpressure) * momY / dens
             - (bx * momX + by * momY + bz * momZ) * by / dens,
             (momY * bx - momX * by) / dens,
-            (momY * by - momY * by) / dens,
+            zeros,
             (momY * bz - momZ * by) / dens,
         ]
     )
@@ -112,20 +112,20 @@ def MHDFluxZ(u):
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
-    pressure = u.pressure()
+    tpressure = u.total_pressure()
     bx, by, bz = u.magX(), u.magY(), u.magZ()
-
+    zeros = np.zeros(dens.shape)
     z_flux = np.array(
         [
             momZ,
             momZ * momX / dens - bz * bx,
             momZ * momY / dens - bz * by,
-            momZ * momZ / dens - bz * bz + pressure,
-            (en + pressure) * momZ / dens
+            momZ * momZ / dens - bz * bz + tpressure,
+            (en + tpressure) * momZ / dens
             - (bx * momX + by * momY + bz * momZ) * bz / dens,
             (momZ * bx - momX * bz) / dens,
-            (momZ * by - momy * bz) / dens,
-            (momZ * bz - momz * bz) / dens,
+            (momZ * by - momY * bz) / dens,
+            zeros,
         ]
     )
     return z_flux

@@ -47,7 +47,7 @@ mx = np.zeros(X.shape)
 my = mx
 mz = mx
 
-e = pressure / (adiabatic_idx - 1) + 0.5*mx * mx / rho
+e = pressure / (adiabatic_idx - 1) + 0.5 * mx * mx / rho
 
 initial_condition = np.array([rho, mx, my, mz, e])
 
