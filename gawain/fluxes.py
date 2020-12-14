@@ -156,7 +156,7 @@ class FluxCalculator:
     def _specific_fluxes(self, u):
         pass
 
-    def calculate_rhs(self, u):
+    def calculate_flux_divergence(self, u):
         self.x_plus_flux = self.flux_functionX(u.plusX())
         self.x_minus_flux = self.flux_functionX(u.minusX())
 

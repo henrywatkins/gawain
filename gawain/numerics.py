@@ -318,3 +318,20 @@ class MHDSolutionVector(SolutionVector):
         lambda2 = yvel + cf
 
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+
+
+class GravitySource:
+    def __init__(self, gravity_field):
+        self.field = gravity_field
+
+    def calculate_gravity_source(self, solvec):
+        gravity_source = np.zeros(solvec.data.shape)
+        gravity_source[1] = solvec.dens() * self.field[0]
+        gravity_source[2] = solvec.dens() * self.field[1]
+        gravity_source[3] = solvec.dens() * self.field[2]
+        gravity_source[4] = (
+            solvec.momX() * self.field[0]
+            + solvec.momY() * self.field[1]
+            + solvec.momZ() * self.field[2]
+        )
+        return gravity_source

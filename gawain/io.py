@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 import gawain.integrators as integrator
 import gawain.fluxes as fluxes
+import gawain.numerics as nu
 
 
 class Output:
@@ -54,6 +55,7 @@ class Parameters:
         self.adi_idx = config["adi_idx"]
         self.initial_condition = config["initial_condition"]
         self.source_data = config["source"] if "source" in config.keys() else None
+        self.gravity_field = config["gravity"] if "gravity" in config.keys() else None
         self.boundary_type = config["boundary_type"]
         self.boundary_value = [[], [], []]
         self.output_dir = config["output_dir"]
@@ -71,6 +73,7 @@ class Parameters:
                 ]
         config.pop("initial_condition", None)
         config.pop("source", None)
+        config.pop("gravity", None)
         self.config = config
 
     def create_integrator(self):
@@ -108,7 +111,22 @@ class Parameters:
                 raise TypeError(
                     "source data has inappropriate mesh shape, it must be the same shape as initial condition mesh shape"
                 )
-        return self.source_data
+        return None
+
+    def create_gravity(self):
+        if self.gravity_field is not None:
+            if self.gravity_field.shape == (
+                3,
+                self.mesh_shape[0],
+                self.mesh_shape[1],
+                self.mesh_shape[2],
+            ):
+                return nu.GravitySource(self.gravity_field)
+            else:
+                raise TypeError(
+                    "gravity field has inappropriate mesh shape, it must be (3, mesh_shape)"
+                )
+        return None
 
     def print_params(self):
         print("run name: ", self.run_name)

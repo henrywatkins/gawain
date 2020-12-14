@@ -22,7 +22,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 64, 64, 1
+nx, ny, nz = 128, 128, 1
 
 mesh_shape = (nx, ny, nz)
 
@@ -57,9 +57,14 @@ bx = cos - 0.1 * np.sin(dr) * sin
 by = sin + 0.1 * np.sin(dr) * cos
 bz = 0.1 * np.cos(dr)
 
-pressure = 0.1 * np.ones(mesh_shape) + 0.5 * (bx * bx + by * by + bz * bz)
+pressure = 0.1 * np.ones(mesh_shape)
+mag_pressure = 0.5 * (bx * bx + by * by + bz * bz)
 
-e = pressure / (adiabatic_idx - 1) + 0.5 * (mx * mx + my * my + mz * mz) / rho
+e = (
+    pressure / (adiabatic_idx - 1)
+    + 0.5 * (mx * mx + my * my + mz * mz) / rho
+    + mag_pressure
+)
 
 initial_condition = np.array([rho, mx, my, mz, e, bx, by, bz])
 

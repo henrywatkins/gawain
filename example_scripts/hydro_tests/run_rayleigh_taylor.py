@@ -1,15 +1,20 @@
-""" test file for input """
+"""Rayleigh-Taylor instability script
+
+This script runs the hydrodynamic Rayleigh-Taylor
+instability test
+"""
 
 import numpy as np
 from gawain.main import run_gawain
+from scipy.constants import pi as PI
 
-run_name = "kelvin_helmholtz"
+run_name = "rayleigh_taylor"
 output_dir = "."
-cfl = 0.1
+cfl = 0.5
 
-with_gpu = False
+with_mhd = False
 
-t_max = 5.0
+t_max = 8.0
 
 # "euler",
 integrator = "euler"
@@ -18,13 +23,13 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 200, 200, 1
+nx, ny, nz = 100, 300, 1
 
 mesh_shape = (nx, ny, nz)
 
-n_outputs = 100
+n_outputs = 200
 
-lx, ly, lz = 1.0, 1.0, 0.001
+lx, ly, lz = 0.5, 1.5, 0.001
 
 mesh_size = (lx, ly, lz)
 
@@ -37,44 +42,46 @@ X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
 adiabatic_idx = 1.4
 
-rho = np.piecewise(Y, [np.absolute(Y) > 0.25, np.absolute(Y) <= 0.25], [1.0, 2.0])
-vx = np.piecewise(Y, [np.absolute(Y) > 0.25, np.absolute(Y) <= 0.25], [-0.5, 0.5])
-vy = np.zeros(X.shape)
-a = -0.1
-b = 0.1
+rho = np.piecewise(Y, [Y > 0, Y <= 0], [2.0, 1.0])
 
-seed1 = a + (b - a) * np.random.random(X.shape)
-seed2 = a + (b - a) * np.random.random(X.shape)
+g = 0.1
 
-pressure = 2.5 * np.ones(X.shape)
+gravity_field = np.array(
+    [np.zeros(mesh_shape), g * np.ones(mesh_shape), np.zeros(mesh_shape)]
+)
 
-mx = rho * vx * (1.0 + seed1)
-my = rho * vy * (1.0 + seed2)
-mz = np.zeros(X.shape)
+P0 = 2.5 * np.ones(mesh_shape)
 
-e = pressure / (adiabatic_idx - 1.0) + mx * mx / rho
+pressure = P0 - g * rho * Y
+
+mx = np.zeros(mesh_shape)
+my = rho * 0.01 * 0.25 * (1.0 + np.cos(4 * PI * X)) * (1.0 + np.cos(3 * PI * Y))
+mz = np.zeros(mesh_shape)
+
+e = pressure / (adiabatic_idx - 1.0) + 0.5 * (mx ** 2 + my ** 2 + mz ** 2) / rho
 
 initial_condition = np.array([rho, mx, my, mz, e])
 
 ############## BOUNDARY CONDITION ######################
 # available types: periodic, fixed
-boundary_conditions = ["periodic", "periodic", "periodic"]
+boundary_conditions = ["periodic", "reflective", "periodic"]
 
 ############## DO NOT EDIT BELOW ############################
-param_dict = {
+config = {
     "run_name": run_name,
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
     "t_max": t_max,
     "n_dumps": n_outputs,
-    "using_gpu": with_gpu,
-    "initial_con": initial_condition,
-    "bound_cons": boundary_conditions,
+    "initial_condition": initial_condition,
+    "boundary_type": boundary_conditions,
     "adi_idx": adiabatic_idx,
     "integrator": integrator,
     "fluxer": fluxer,
     "output_dir": output_dir,
+    "gravity": gravity_field,
+    "with_mhd": with_mhd,
 }
 
-run_gawain(param_dict)
+run_gawain(config)
