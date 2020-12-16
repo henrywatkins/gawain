@@ -1,7 +1,7 @@
 """GAWAIN
 
 A small ideal-MHD code for trying out
-hyrdrodynamics and magetohydrodynamics 
+hydrodynamics and magetohydrodynamics 
 in python.
 
 """

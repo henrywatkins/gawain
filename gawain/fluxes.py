@@ -10,6 +10,7 @@ import numpy as np
 
 
 def EulerFluxX(u):
+    """Calculate the x-direction Euler flux from a solultion vector"""
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
@@ -27,6 +28,7 @@ def EulerFluxX(u):
 
 
 def EulerFluxY(u):
+    """Calculate the y-direction Euler flux from a solultion vector"""
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
@@ -45,6 +47,7 @@ def EulerFluxY(u):
 
 
 def EulerFluxZ(u):
+    """Calculate the z-direction Euler flux from a solultion vector"""
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
@@ -63,6 +66,7 @@ def EulerFluxZ(u):
 
 
 def MHDFluxX(u):
+    """Calculate the x-direction MHD flux from a solultion vector"""
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
@@ -86,6 +90,7 @@ def MHDFluxX(u):
 
 
 def MHDFluxY(u):
+    """Calculate the y-direction MHD flux from a solultion vector"""
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
@@ -109,6 +114,7 @@ def MHDFluxY(u):
 
 
 def MHDFluxZ(u):
+    """Calculate the z-direction MHD flux from a solution vector"""
     dens = u.dens()
     momX, momY, momZ = u.momX(), u.momY(), u.momZ()
     en = u.energy()
@@ -132,6 +138,17 @@ def MHDFluxZ(u):
 
 
 class FluxCalculator:
+    """Base flux calculation utility
+
+    Base class for classes used to calculate the divergence of 
+    flux term in the conservation problem.
+    
+    Attributes
+    ----------
+    x/y/z_plus/minus_flux : ndarray
+        the numerical fluxes in each direction
+    """
+
     def __init__(self):
         self.x_plus_flux = None
         self.x_minus_flux = None
@@ -144,6 +161,7 @@ class FluxCalculator:
         self.flux_functionZ = None
 
     def set_flux_function(self, with_mhd):
+        """set the flux calculation function to euler or mhd"""
         if with_mhd:
             self.flux_functionX = MHDFluxX
             self.flux_functionY = MHDFluxY
@@ -157,6 +175,20 @@ class FluxCalculator:
         pass
 
     def calculate_flux_divergence(self, u):
+        """Flux divergence calculation
+        
+        numerical div F calculation
+        
+        Parameters
+        ----------
+        u : SolutionVector
+            the solution vector to calculate the flux divergence
+        
+        Returns
+        -------
+        total_flux : ndarray
+             the numerical flux divergence for a solution vector field
+        """
         self.x_plus_flux = self.flux_functionX(u.plusX())
         self.x_minus_flux = self.flux_functionX(u.minusX())
 
@@ -172,29 +204,37 @@ class FluxCalculator:
 
 class HLLFluxer(FluxCalculator):
     """ A MUSCL-Hancock HLL solver using minmod limiter
+    
+    This class calculates the numerical divergence of the flux 
+    in the conservation equation problem using the HLLE solver 
+    with MUSCL-hancock reconstruction and a minmod limiter.
     """
 
     def __init__(self):
         super(HLLFluxer, self).__init__()
 
-    def superbee(self, r):
-        return np.maximum(
-            np.zeros(r.shape),
-            np.maximum(
-                np.minimum(2 * r, np.ones(r.shape)), np.minimum(r, 2 * np.ones(r.shape))
-            ),
-        )
-
-    def vanleer(self, r):
-        abs_r = np.absolute(r)
-        return (r + abs_r) / (1.0 + abs_r)
-
     def minmod(self, a, b):
+        """minmod limiter"""
         return np.where(
             a * b <= 0.0, 0.0, np.where(np.absolute(a) < np.absolute(b), a, b)
         )
 
     def wave_speeds_X(self, Ul, Ur):
+        """Calculate the min/max wave speeds at the x-axis inteface
+        between two cells
+        
+        Parameters
+        ----------
+        Ul : ndarray
+            the solution vector mesh data values to the left of the interface 
+        Ur : ndarray
+            the solution vector mesh data values to the right of the interface
+        
+        Returns
+        -------
+        Tuple[ndarray, ndarray]
+            the min and max wave speeds at the interface for each mesh cell
+        """
 
         lambda_L_min, lambda_L_max = Ul.calculate_min_max_wave_speeds_X()
         lambda_R_min, lambda_R_max = Ur.calculate_min_max_wave_speeds_X()
@@ -207,6 +247,21 @@ class HLLFluxer(FluxCalculator):
         )
 
     def wave_speeds_Y(self, Ul, Ur):
+        """Calculate the min/max wave speeds at the y-axis inteface
+        between two cells
+        
+        Parameters
+        ----------
+        Ul : ndarray
+            the solution vector mesh data values to the left of the interface 
+        Ur : ndarray
+            the solution vector mesh data values to the right of the interface
+        
+        Returns
+        -------
+        Tuple[ndarray, ndarray]
+            the min and max wave speeds at the interface for each mesh cell
+        """
 
         lambda_L_min, lambda_L_max = Ul.calculate_min_max_wave_speeds_Y()
         lambda_R_min, lambda_R_max = Ur.calculate_min_max_wave_speeds_Y()
@@ -219,6 +274,7 @@ class HLLFluxer(FluxCalculator):
         )
 
     def hll_flux_X(self, Sl, Sr, Ul, Ur):
+        """Calculate the HLLE flux at the x-axis interfaces"""
 
         fl = self.flux_functionX(Ul)
         fr = self.flux_functionX(Ur)
@@ -231,6 +287,7 @@ class HLLFluxer(FluxCalculator):
         return np.where(Sl >= 0.0, fl, np.where(Sr <= 0.0, fr, fhll))
 
     def hll_flux_Y(self, Sl, Sr, Ul, Ur):
+        """Calculate the HLLE flux at the y-axis interfaces"""
 
         fl = self.flux_functionY(Ul)
         fr = self.flux_functionY(Ur)
@@ -243,7 +300,8 @@ class HLLFluxer(FluxCalculator):
         return np.where(Sl >= 0.0, fl, np.where(Sr <= 0.0, fr, fhll))
 
     def MUSCL_Hancock_reconstructionX(self, U_left, U_mid, U_right):
-        """" returns the states to the rights and lefts of the interfaces
+        """"Calculate the MUSCL-hancock reconstruction of cell values 
+        in the plus/minus x-directions.
         
         note: this means lefts holds the states for the left of the i+1/2 face,
         rights holds the states for the right of the i-1/2 face.
@@ -280,7 +338,8 @@ class HLLFluxer(FluxCalculator):
         return lefts, rights
 
     def MUSCL_Hancock_reconstructionY(self, U_left, U_mid, U_right):
-        """" returns the states to the rights and lefts of the interfaces
+        """"Calculate the MUSCL-hancock reconstruction of cell values 
+        in the plus/minus y-directions.
         
         note: this means lefts holds the states for the left of the i+1/2 face,
         rights holds the states for the right of the i-1/2 face.
@@ -317,7 +376,7 @@ class HLLFluxer(FluxCalculator):
         return lefts, rights
 
     def _specific_fluxes(self, u):
-        # MUSCL-Hancock reconstruction
+        """HLLE solver - specifc flux calculation"""
 
         uplus = u.plusX()
         uminus = u.minusX()
@@ -373,11 +432,17 @@ class HLLFluxer(FluxCalculator):
 
 
 class LaxFriedrichsFluxer(FluxCalculator):
+    """Lax-Friedrichs method flux calculator
+    
+    This class calculates the numerical divergence of the flux 
+    in the conservation equation problem using the Lax-Friedrichs method.
+    """
+
     def __init__(self):
         super(LaxFriedrichsFluxer, self).__init__()
 
     def _specific_fluxes(self, u):
-
+        """Lax-Friedrichs -specific flux calculation"""
         u1 = u.centroid()
         dt = u.timestep
         dx, dy, dz = u.dx, u.dy, u.dz
@@ -404,13 +469,17 @@ class LaxFriedrichsFluxer(FluxCalculator):
 
 
 class LaxWendroffFluxer(FluxCalculator):
-    """ using two-step richtmyer method
+    """Lax-Wendroff method flux calculator
+    
+    This class calculates the numerical divergence of the flux 
+    in the conservation equation problem using the Lax-Wendroff method.
     """
 
     def __init__(self):
         super(LaxWendroffFluxer, self).__init__()
 
     def _specific_fluxes(self, u):
+        """Lax-Wendroff - specific flux calculation"""
 
         dt = u.timestep
         dx, dy, dz = u.dx, u.dy, u.dz

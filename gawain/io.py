@@ -18,7 +18,25 @@ import gawain.numerics as nu
 
 
 class Output:
+    """Output utilities class
+    
+    Tool for outputting data from the simulation
+    
+    Attributes
+    ----------
+    save_dir : str
+        the path to the save folder where all output data is saved
+    """
+
     def __init__(self, Parameters, SolutionVector):
+        """
+        Parameters
+        ----------
+        Parameters : a Parameters object
+            parameters and configuration of the simulation
+        SolutionVector : a SolutionVector object
+            the initial solution vector of the simulation
+        """
         self.dump_no = 0
         self.save_dir = str(Parameters.output_dir) + "/" + str(Parameters.run_name)
         if not os.path.exists(self.save_dir):
@@ -35,13 +53,32 @@ class Output:
             )
 
     def dump(self, SolutionVector):
+        """Output the solution to file
+        
+        Parameters:
+        -----------
+        SolutionVector : a SolutionVector object
+            the solution vector to be output to file
+        """
         file_name = self.save_dir + "/gawain_output_" + str(self.dump_no) + ".npy"
         self.dump_no += 1
         np.save(file_name, SolutionVector.data)
 
 
 class Parameters:
+    """Configuration class for a simulation
+    
+    The Parameters objects holds all simulation configuration information.
+    This includes mesh parameters, method, initial and boundary conditions.
+    """
+
     def __init__(self, config):
+        """
+        Parameters
+        ----------
+        config : dict
+            a python dictionary containing all configuration info
+        """
         self.available_integrators = ["euler"]
         self.available_fluxers = ["base", "lax-wendroff", "lax-friedrichs", "hll"]
         self.integrator_type = config["integrator"]
@@ -77,6 +114,7 @@ class Parameters:
         self.config = config
 
     def create_integrator(self):
+        """create an integrator object"""
         if self.integrator_type in self.available_integrators:
             return integrator.Integrator(self)
         else:
@@ -87,6 +125,7 @@ class Parameters:
             )
 
     def create_fluxer(self):
+        """create a flux calculation object"""
         if self.fluxer_type in self.available_fluxers:
             if self.fluxer_type == "base":
                 return fluxes.FluxCalculator()
@@ -104,6 +143,7 @@ class Parameters:
             )
 
     def create_source(self):
+        """create a source object"""
         if self.source_data is not None:
             if self.source_data.shape == self.initial_condition.shape:
                 return self.source_data
@@ -114,6 +154,7 @@ class Parameters:
         return None
 
     def create_gravity(self):
+        """create a gravity source object"""
         if self.gravity_field is not None:
             if self.gravity_field.shape == (
                 3,
@@ -141,7 +182,27 @@ class Parameters:
 
 
 class Reader:
+    """Data loading and plotting utility
+    
+    Load simulation data from a directory and plot results
+    
+    Attributes
+    ----------
+    file_path : str
+        simulation run directory 
+    run_config : dict
+        python dictionary containing run configuration
+    data : dict
+        dictionary containing raw simulation data for each variable
+    """
+
     def __init__(self, run_dir_path):
+        """
+        Parameters
+        ----------
+        run_dir_path : str
+            the simulation run directory
+        """
         self.file_path = run_dir_path
         self.run_config = None
         with open(self.file_path + "/config.json", "r") as file:
@@ -181,6 +242,21 @@ class Reader:
             self.data[variable] = np.stack(self.data[variable])
 
     def plot(self, variable, timesteps=[0], save_as=None, vmax=1, vmin=0):
+        """Plot the output for a particular variable
+        
+        Parameters
+        ----------
+        variable : str
+            the variable to plot
+        timesteps : List[int], optional
+            the indices of timesteps to plot
+        save_as : str, optional
+            the filename and path to save the plot image
+        vmin : float, optional
+            the minimum value to show on the plot
+        vmax : float, optional
+            the maximum value to show on the plot        
+        """
         to_plot = self.data[variable]
         # 1D runs
         if self.data_dim == 2:
@@ -225,4 +301,5 @@ class Reader:
             print("plot() only supports visualisation of 1D and 2D data")
 
     def get_data(self, variable):
+        """Get the raw data for a particular variable"""
         return self.data[variable]
