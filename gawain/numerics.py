@@ -13,13 +13,13 @@ import numpy as np
 
 class Clock:
     """Timing utility for simulations
-    
+
     This clock timer keeps track of the simulation run time
-    
+
     Attributes
     ----------
     current_time : float
-        the current simulation time 
+        the current simulation time
     end_time : float
         the time the simulation will end
     next_outout_time : float
@@ -70,10 +70,10 @@ class Clock:
 
 class SolutionVector:
     """Hydrodynamic solution vector field
-    
-    This solution vector contains all vector field data for 
+
+    This solution vector contains all vector field data for
     all variables in the hydrodynamic problem.
-    
+
     Attributes
     ----------
     data : ndarray
@@ -89,7 +89,7 @@ class SolutionVector:
     adi_idx : float
         the adiabatic index
     timestep : float
-        the current timestep size 
+        the current timestep size
     variable_names : List[str]
         the names of the variables contained in the solution vector, in order of their vecotr position
     """
@@ -113,7 +113,7 @@ class SolutionVector:
 
     def set_state(self, Parameters):
         """Set the initial state of the solution vector
-        
+
         Parameters
         ----------
         Parameters : a Parameters object
@@ -125,7 +125,9 @@ class SolutionVector:
         self.adi_idx = Parameters.adi_idx
         self.set_centroid(Parameters.initial_condition)
         self.cfl = Parameters.cfl
-        self.boundsetter = BoundarySetter(Parameters.boundary_type, Parameters.boundary_value)
+        self.boundsetter = BoundarySetter(
+            Parameters.boundary_type, Parameters.initial_condition
+        )
 
     def copy(self):
         """Return a copy of the solution vector"""
@@ -136,11 +138,12 @@ class SolutionVector:
         new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
         new_vector.adi_idx = self.adi_idx
         new_vector.timestep = self.timestep
+        new_vector.boundsetter = self.boundsetter
         return new_vector
 
     def calculate_min_max_wave_speeds_X(self):
         """Return the the minimum and maximum wave speeds in the X direction
-        
+
         Returns
         -------
         Tuple[ndarray, ndarray]
@@ -154,7 +157,7 @@ class SolutionVector:
 
     def calculate_min_max_wave_speeds_Y(self):
         """Return the the minimum and maximum wave speeds in the Y direction
-        
+
         Returns
         -------
         Tuple[ndarray, ndarray]
@@ -168,7 +171,7 @@ class SolutionVector:
 
     def calculate_timestep(self):
         """Calculate the timestep size, using the wave speeds and CFL value
-        
+
         Returns
         -------
         timestep : float
@@ -189,7 +192,7 @@ class SolutionVector:
 
     def centroid(self):
         """Return the solution vector data for each mesh cell
-        
+
         Returns
         -------
         ndarray
@@ -199,12 +202,12 @@ class SolutionVector:
 
     def get_variable(self, variable_name):
         """Get the solution data specific to a variable
-        
+
         Parameters
         ----------
         variable_name : str
             the name of the variable data to return
-        
+
         Returns
         -------
         ndarray
@@ -212,22 +215,22 @@ class SolutionVector:
         """
         index = self.variable_names.index(variable_name)
         return self.data[index]
-    
+
     def shift(self, axis, direction):
         """Shift all the solution data and apply boundary conditions
-        
-        This operation provides the means to access the positions of the 
+
+        This operation provides the means to access the positions of the
         numerical stencil in a vectorized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
+        solution vector with the data shifted to required stencil position,
         accounting for boundary conditions.
-        
+
         Parameters
         ----------
-        axis : int 
+        axis : int
             the axis to shift (x:0, y:1, z:2)
         direction : int
             the direction to shift in (+1 or -1)
-            
+
         Returns
         -------
         new_vector : SolutionVector
@@ -239,166 +242,34 @@ class SolutionVector:
         return new_vector
 
     def plusX(self):
-        """Shift all the solution data in the positive x direction
-        
-        This operation provides the means to access the +x position of the 
-        numerical stencil in a vectorized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
-        accounting for boundary conditions.
-        
-        Returns
-        -------
-        new_vector : SolutionVector
-            the +X solution vector for every cell in the mesh
-        """
-        rolled = np.roll(self.data, 1, axis=1)
-        if self.boundary_type[0] == "periodic":
-            pass
-        elif self.boundary_type[0] == "fixed":
-            rolled[:, 0] = self.boundary_value[0][0]
-        elif self.boundary_type[0] == "reflective":
-            rolled[0, 0] = self.data[0, 0]
-            rolled[1, 0] = -self.data[1, 0]
-            rolled[4, 0] = self.data[4, 0]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
+        """Shift all the solution data in the positive x direction"""
+        return self.shift(0, 1)
 
     def minusX(self):
-        """Shift all the solution data in the negative x direction
-        
-        This operation provides the means to acces the -x position of the 
-        numerical stencil in a vecotrized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
-        accounting for boundary conditions.
-        
-        Returns
-        -------
-        new_vector : SolutionVector
-            the -X solution vector for every cell in the mesh
-        """
-        rolled = np.roll(self.data, -1, axis=1)
-        if self.boundary_type[0] == "periodic":
-            pass
-        elif self.boundary_type[0] == "fixed":
-            rolled[:, -1] = self.boundary_value[0][1]
-        elif self.boundary_type[0] == "reflective":
-            rolled[0, -1] = self.data[0, -1]
-            rolled[1, -1] = -self.data[1, -1]
-            rolled[4, -1] = self.data[4, -1]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
+        """Shift all the solution data in the negative x direction"""
+        return self.shift(0, -1)
 
     def plusY(self):
-        """Shift all the solution data in the positive y direction
-        
-        This operation provides the means to acces the +y position of the 
-        numerical stencil in a vecotrized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
-        accounting for boundary conditions.
-        
-        Returns
-        -------
-        new_vector : SolutionVector
-            the +y solution vector for every cell in the mesh
-        """
-        rolled = np.roll(self.data, 1, axis=2)
-        if self.boundary_type[1] == "periodic":
-            pass
-        elif self.boundary_type[1] == "fixed":
-            rolled[:, :, 0] = self.boundary_value[1][0]
-        elif self.boundary_type[1] == "reflective":
-            rolled[0, :, 0] = self.data[0, :, 0]
-            rolled[1, :, 0] = -self.data[1, :, 0]
-            rolled[4, :, 0] = self.data[4, :, 0]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
+        """Shift all the solution data in the positive y direction"""
+        return self.shift(1, 1)
 
     def minusY(self):
-        """Shift all the solution data in the negative y direction
-        
-        This operation provides the means to acces the -y position of the 
-        numerical stencil in a vecotrized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
-        accounting for boundary conditions.
-        
-        Returns
-        -------
-        new_vector : SolutionVector
-            the -y solution vector for every cell in the mesh
-        """
-        rolled = np.roll(self.data, -1, axis=2)
-        if self.boundary_type[1] == "periodic":
-            pass
-        elif self.boundary_type[1] == "fixed":
-            rolled[:, :, -1] = self.boundary_value[1][1]
-        elif self.boundary_type[1] == "reflective":
-            rolled[0, :, -1] = self.data[0, :, -1]
-            rolled[1, :, -1] = -self.data[1, :, -1]
-            rolled[4, :, -1] = self.data[4, :, -1]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
+        """Shift all the solution data in the negative y direction"""
+        return self.shift(1, -1)
 
     def plusZ(self):
-        """Shift all the solution data in the positive z direction
-        
-        This operation provides the means to acces the +z position of the 
-        numerical stencil in a vecotrized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
-        accounting for boundary conditions.
-        
-        Returns
-        -------
-        new_vector : SolutionVector
-            the +z solution vector for every cell in the mesh
-        """
-        rolled = np.roll(self.data, 1, axis=3)
-        if self.boundary_type[2] == "periodic":
-            pass
-        elif self.boundary_type[2] == "fixed":
-            rolled[:, :, :, 0] = self.boundary_value[2][0]
-        elif self.boundary_type[2] == "reflective":
-            rolled[0, :, :, 0] = self.data[0, :, :, 0]
-            rolled[1, :, :, 0] = -self.data[1, :, :, 0]
-            rolled[4, :, :, 0] = self.data[4, :, :, 0]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
+        """Shift all the solution data in the positive z direction"""
+        return self.shift(2, 1)
 
     def minusZ(self):
-        """Shift all the solution data in the neagtive z direction
-        
-        This operation provides the means to acces the -z position of the 
-        numerical stencil in a vecotrized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position, 
-        accounting for boundary conditions.
-        
-        Returns
-        -------
-        new_vector : SolutionVector
-            the -z solution vector for every cell in the mesh
-        """
-        rolled = np.roll(self.data, -1, axis=3)
-        if self.boundary_type[2] == "periodic":
-            pass
-        elif self.boundary_type[2] == "fixed":
-            rolled[:, :, :, -1] = self.boundary_value[2][1]
-        elif self.boundary_type[2] == "reflective":
-            rolled[0, :, :, -1] = self.data[0, :, :, -1]
-            rolled[1, :, :, -1] = -self.data[1, :, :, -1]
-            rolled[4, :, :, -1] = self.data[4, :, :, -1]
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
-        return new_vector
+        """Shift all the solution data in the neagtive z direction"""
+        return self.shift(2, -1)
 
     def update(self, array):
         """Update the solution vector data with an array of values
-        
+
         u' = u + delta t * array
-        
+
         Parameters
         ----------
         array : ndarray
@@ -456,8 +327,8 @@ class SolutionVector:
 
 class MHDSolutionVector(SolutionVector):
     """Magnetohydrodynamic solution vector field
-    
-    This solution vector contains all vector field data for 
+
+    This solution vector contains all vector field data for
     all variables in the magnetohydrodynamic problem.
     """
 
@@ -483,6 +354,7 @@ class MHDSolutionVector(SolutionVector):
         new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
         new_vector.adi_idx = self.adi_idx
         new_vector.timestep = self.timestep
+        new_vector.boundsetter = self.boundsetter
         return new_vector
 
     def magX(self):
@@ -541,7 +413,7 @@ class MHDSolutionVector(SolutionVector):
 
     def calculate_min_max_wave_speeds_X(self):
         """Return the the minimum and maximum wave speeds in the X direction
-        
+
         Returns
         -------
         Tuple[ndarray, ndarray]
@@ -556,7 +428,7 @@ class MHDSolutionVector(SolutionVector):
 
     def calculate_min_max_wave_speeds_Y(self):
         """Return the the minimum and maximum wave speeds in the Y direction
-        
+
         Returns
         -------
         Tuple[ndarray, ndarray]
@@ -569,13 +441,14 @@ class MHDSolutionVector(SolutionVector):
 
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
+
 class BoundarySetter:
     """Boundary value setting object
-    
+
     This class takes an ndarray of solution
-    values and changes the boundaries to the 
+    values and changes the boundaries to the
     specified boundary values.
-    
+
     Attributes
     ----------
     types : List[str]
@@ -583,43 +456,77 @@ class BoundarySetter:
     values : List[List[float]]
         the values at the boundaries if fixed
     """
+
     def __init__(self, boundary_types, initial_boundary_values):
         self.boundary_types = boundary_types
         self.initial_values = initial_boundary_values
-        self.index_sets = []
-        
+
     def set_stencil(self, array, axis, direction):
-        stencil_arm = np.roll(array, -direction, axis=axis+1)
+        stencil_arm = np.roll(array, direction, axis=axis + 1)
         boundary_type = self.boundary_types[axis]
-        
+        shape = array.shape
+
         if boundary_type == "periodic":
             pass
         elif boundary_type == "outflow":
-            boundary_index_set = self.get_boundary_indices(axis, direction)
+            boundary_index_set = self.get_boundary_indices(axis, direction, shape)
             stencil_arm[boundary_index_set] = array[boundary_index_set]
         elif boundary_type == "fixed":
-            boundary_index_set = self.get_boundary_indices(axis, direction)
+            boundary_index_set = self.get_boundary_indices(axis, direction, shape)
             stencil_arm[boundary_index_set] = self.initial_values[boundary_index_set]
         elif boundary_type == "reflective":
-            boundary_index_set = self.get_boundary_indices(axis, direction)
+            boundary_index_set = self.get_boundary_indices(axis, direction, shape)
             velocity_boundary_indices = self.velocity_boundary_indices(axis, direction)
             stencil_arm[boundary_index_set] = array[boundary_index_set]
             stencil_arm[velocity_boundary_indices] = -array[velocity_boundary_indices]
-            
+
         return stencil_arm
-    
-    def get_boundary_indices(self, axis, direction):
-        index_sets[axis+1] = np.array([0 if direction==])
-        return (var_index[:, np.newaxis, np.newaxis,  np.newaxis], x_index[:,np.newaxis, np.newaxis], y_index[:, np.newaxis], z_index)
-    
-    def velocity_boundary_indices(self, axis, direction):
-        return (ind[:,np.newaxis, np.newaxis,  np.newaxis], ind2[:,np.newaxis, np.newaxis], ind3[:, np.newaxis], ind4)
-    
+
+    def get_boundary_indices(self, axis, direction, shape):
+        variables_index_set = np.arange(shape[0])
+        x_index_set = np.arange(shape[1])
+        y_index_set = np.arange(shape[2])
+        z_index_set = np.arange(shape[3])
+
+        if axis == 0:
+            edge_value = 0 if direction == 1 else shape[1] - 1
+            x_index_set = np.array([edge_value])
+        elif axis == 1:
+            edge_value = 0 if direction == 1 else shape[2] - 1
+            y_index_set = np.array([edge_value])
+        elif axis == 2:
+            edge_value = 0 if direction == 1 else shape[3] - 1
+            z_index_set = np.array([edge_value])
+
+        return np.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
+
+    def velocity_boundary_indices(self, axis, direction, shape):
+        variables_index_set = np.arange(shape[0])
+        x_index_set = np.arange(shape[1])
+        y_index_set = np.arange(shape[2])
+        z_index_set = np.arange(shape[3])
+
+        if axis == 0:
+            variables_index_set = np.array([1])
+            edge_value = 0 if direction == 1 else shape[1] - 1
+            x_index_set = np.array([edge_value])
+        elif axis == 1:
+            variables_index_set = np.array([2])
+            edge_value = 0 if direction == 1 else shape[2] - 1
+            y_index_set = np.array([edge_value])
+        elif axis == 2:
+            variables_index_set = np.array([3])
+            edge_value = 0 if direction == 1 else shape[3] - 1
+            z_index_set = np.array([edge_value])
+
+        return np.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
+
+
 class GravitySource:
     """Gravitational field sources
-    
-    This class provides gravity source terms for the equations. 
-    
+
+    This class provides gravity source terms for the equations.
+
     Attributes
     ----------
     gravity_field : ndarray
@@ -631,12 +538,12 @@ class GravitySource:
 
     def calculate_gravity_source(self, solvec):
         """Calculates the gravity field source terms
-        
+
         Parameters
         ----------
         solvec : SolutionVector
             the solution vector of the simulation
-        
+
         Returns
         -------
         gravity_source : ndarray

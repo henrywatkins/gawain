@@ -140,9 +140,9 @@ def MHDFluxZ(u):
 class FluxCalculator:
     """Base flux calculation utility
 
-    Base class for classes used to calculate the divergence of 
+    Base class for classes used to calculate the divergence of
     flux term in the conservation problem.
-    
+
     Attributes
     ----------
     x/y/z_plus/minus_flux : ndarray
@@ -176,14 +176,14 @@ class FluxCalculator:
 
     def calculate_flux_divergence(self, u):
         """Flux divergence calculation
-        
+
         numerical div F calculation
-        
+
         Parameters
         ----------
         u : SolutionVector
             the solution vector to calculate the flux divergence
-        
+
         Returns
         -------
         total_flux : ndarray
@@ -203,10 +203,10 @@ class FluxCalculator:
 
 
 class HLLFluxer(FluxCalculator):
-    """ A MUSCL-Hancock HLL solver using minmod limiter
-    
-    This class calculates the numerical divergence of the flux 
-    in the conservation equation problem using the HLLE solver 
+    """A MUSCL-Hancock HLL solver using minmod limiter
+
+    This class calculates the numerical divergence of the flux
+    in the conservation equation problem using the HLLE solver
     with MUSCL-hancock reconstruction and a minmod limiter.
     """
 
@@ -222,14 +222,14 @@ class HLLFluxer(FluxCalculator):
     def wave_speeds_X(self, Ul, Ur):
         """Calculate the min/max wave speeds at the x-axis inteface
         between two cells
-        
+
         Parameters
         ----------
         Ul : ndarray
-            the solution vector mesh data values to the left of the interface 
+            the solution vector mesh data values to the left of the interface
         Ur : ndarray
             the solution vector mesh data values to the right of the interface
-        
+
         Returns
         -------
         Tuple[ndarray, ndarray]
@@ -249,14 +249,14 @@ class HLLFluxer(FluxCalculator):
     def wave_speeds_Y(self, Ul, Ur):
         """Calculate the min/max wave speeds at the y-axis inteface
         between two cells
-        
+
         Parameters
         ----------
         Ul : ndarray
-            the solution vector mesh data values to the left of the interface 
+            the solution vector mesh data values to the left of the interface
         Ur : ndarray
             the solution vector mesh data values to the right of the interface
-        
+
         Returns
         -------
         Tuple[ndarray, ndarray]
@@ -300,9 +300,9 @@ class HLLFluxer(FluxCalculator):
         return np.where(Sl >= 0.0, fl, np.where(Sr <= 0.0, fr, fhll))
 
     def MUSCL_Hancock_reconstructionX(self, U_left, U_mid, U_right):
-        """"Calculate the MUSCL-hancock reconstruction of cell values 
+        """ "Calculate the MUSCL-hancock reconstruction of cell values
         in the plus/minus x-directions.
-        
+
         note: this means lefts holds the states for the left of the i+1/2 face,
         rights holds the states for the right of the i-1/2 face.
         """
@@ -338,9 +338,9 @@ class HLLFluxer(FluxCalculator):
         return lefts, rights
 
     def MUSCL_Hancock_reconstructionY(self, U_left, U_mid, U_right):
-        """"Calculate the MUSCL-hancock reconstruction of cell values 
+        """ "Calculate the MUSCL-hancock reconstruction of cell values
         in the plus/minus y-directions.
-        
+
         note: this means lefts holds the states for the left of the i+1/2 face,
         rights holds the states for the right of the i-1/2 face.
         """
@@ -433,8 +433,8 @@ class HLLFluxer(FluxCalculator):
 
 class LaxFriedrichsFluxer(FluxCalculator):
     """Lax-Friedrichs method flux calculator
-    
-    This class calculates the numerical divergence of the flux 
+
+    This class calculates the numerical divergence of the flux
     in the conservation equation problem using the Lax-Friedrichs method.
     """
 
@@ -470,8 +470,8 @@ class LaxFriedrichsFluxer(FluxCalculator):
 
 class LaxWendroffFluxer(FluxCalculator):
     """Lax-Wendroff method flux calculator
-    
-    This class calculates the numerical divergence of the flux 
+
+    This class calculates the numerical divergence of the flux
     in the conservation equation problem using the Lax-Wendroff method.
     """
 

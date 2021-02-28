@@ -19,9 +19,9 @@ import gawain.numerics as nu
 
 class Output:
     """Output utilities class
-    
+
     Tool for outputting data from the simulation
-    
+
     Attributes
     ----------
     save_dir : str
@@ -54,7 +54,7 @@ class Output:
 
     def dump(self, SolutionVector):
         """Output the solution to file
-        
+
         Parameters:
         -----------
         SolutionVector : a SolutionVector object
@@ -67,7 +67,7 @@ class Output:
 
 class Parameters:
     """Configuration class for a simulation
-    
+
     The Parameters objects holds all simulation configuration information.
     This includes mesh parameters, method, initial and boundary conditions.
     """
@@ -183,13 +183,13 @@ class Parameters:
 
 class Reader:
     """Data loading and plotting utility
-    
+
     Load simulation data from a directory and plot results
-    
+
     Attributes
     ----------
     file_path : str
-        simulation run directory 
+        simulation run directory
     run_config : dict
         python dictionary containing run configuration
     data : dict
@@ -243,7 +243,7 @@ class Reader:
 
     def plot(self, variable, timesteps=[0], save_as=None, vmax=1, vmin=0):
         """Plot the output for a particular variable
-        
+
         Parameters
         ----------
         variable : str
@@ -255,7 +255,7 @@ class Reader:
         vmin : float, optional
             the minimum value to show on the plot
         vmax : float, optional
-            the maximum value to show on the plot        
+            the maximum value to show on the plot
         """
         to_plot = self.data[variable]
         # 1D runs
@@ -287,7 +287,10 @@ class Reader:
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
                 subplot.pcolormesh(
-                    to_plot[step], vmin=vmin, vmax=vmax, cmap="plasma",
+                    to_plot[step],
+                    vmin=vmin,
+                    vmax=vmax,
+                    cmap="plasma",
                 )
                 subplot.set_xlim(0, new_shape[2])
                 subplot.set_ylim(0, new_shape[1])

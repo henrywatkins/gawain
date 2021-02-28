@@ -11,7 +11,7 @@ import numpy as np
 
 class Integrator:
     """Integration class
-    
+
     Integrate the solution given the RHS of the equation,
     timestep size and any sources.
 
@@ -33,12 +33,12 @@ class Integrator:
 
     def integrate(self, solution_vector):
         """Integrate the solution at this timestep
-        
+
         Parameters
         ----------
         solution_vector : SolutionVector-type object
             a solution vector to be integrated at this timestep
-        
+
         Returns
         -------
         solution_vector : SolutionVector-type object
