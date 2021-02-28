@@ -98,6 +98,7 @@ class SolutionVector:
         self.data = None
         self.boundary_type = None
         self.boundary_value = None
+        self.boundsetter = None
         self.dx, self.dy, self.dz = None, None, None
         self.adi_idx = 1.4
         self.timestep = 0.0001
@@ -124,6 +125,7 @@ class SolutionVector:
         self.adi_idx = Parameters.adi_idx
         self.set_centroid(Parameters.initial_condition)
         self.cfl = Parameters.cfl
+        self.boundsetter = BoundarySetter(Parameters.boundary_type, Parameters.boundary_value)
 
     def copy(self):
         """Return a copy of the solution vector"""
@@ -210,12 +212,37 @@ class SolutionVector:
         """
         index = self.variable_names.index(variable_name)
         return self.data[index]
+    
+    def shift(self, axis, direction):
+        """Shift all the solution data and apply boundary conditions
+        
+        This operation provides the means to access the positions of the 
+        numerical stencil in a vectorized manner. It makes a copy of the
+        solution vector with the data shifted to required stencil position, 
+        accounting for boundary conditions.
+        
+        Parameters
+        ----------
+        axis : int 
+            the axis to shift (x:0, y:1, z:2)
+        direction : int
+            the direction to shift in (+1 or -1)
+            
+        Returns
+        -------
+        new_vector : SolutionVector
+            the shifted solution vector for every cell in the mesh
+        """
+        rolled = self.boundsetter.set_stencil(self.data, axis, direction)
+        new_vector = self.copy()
+        new_vector.set_centroid(rolled)
+        return new_vector
 
     def plusX(self):
         """Shift all the solution data in the positive x direction
         
-        This operation provides the means to acces the +x position of the 
-        numerical stencil in a vecotrized manner. It makes a copy of the
+        This operation provides the means to access the +x position of the 
+        numerical stencil in a vectorized manner. It makes a copy of the
         solution vector with the data shifted to required stencil position, 
         accounting for boundary conditions.
         
@@ -542,7 +569,52 @@ class MHDSolutionVector(SolutionVector):
 
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
-
+class BoundarySetter:
+    """Boundary value setting object
+    
+    This class takes an ndarray of solution
+    values and changes the boundaries to the 
+    specified boundary values.
+    
+    Attributes
+    ----------
+    types : List[str]
+        the boundary value types for the x, y ,z axes
+    values : List[List[float]]
+        the values at the boundaries if fixed
+    """
+    def __init__(self, boundary_types, initial_boundary_values):
+        self.boundary_types = boundary_types
+        self.initial_values = initial_boundary_values
+        self.index_sets = []
+        
+    def set_stencil(self, array, axis, direction):
+        stencil_arm = np.roll(array, -direction, axis=axis+1)
+        boundary_type = self.boundary_types[axis]
+        
+        if boundary_type == "periodic":
+            pass
+        elif boundary_type == "outflow":
+            boundary_index_set = self.get_boundary_indices(axis, direction)
+            stencil_arm[boundary_index_set] = array[boundary_index_set]
+        elif boundary_type == "fixed":
+            boundary_index_set = self.get_boundary_indices(axis, direction)
+            stencil_arm[boundary_index_set] = self.initial_values[boundary_index_set]
+        elif boundary_type == "reflective":
+            boundary_index_set = self.get_boundary_indices(axis, direction)
+            velocity_boundary_indices = self.velocity_boundary_indices(axis, direction)
+            stencil_arm[boundary_index_set] = array[boundary_index_set]
+            stencil_arm[velocity_boundary_indices] = -array[velocity_boundary_indices]
+            
+        return stencil_arm
+    
+    def get_boundary_indices(self, axis, direction):
+        index_sets[axis+1] = np.array([0 if direction==])
+        return (var_index[:, np.newaxis, np.newaxis,  np.newaxis], x_index[:,np.newaxis, np.newaxis], y_index[:, np.newaxis], z_index)
+    
+    def velocity_boundary_indices(self, axis, direction):
+        return (ind[:,np.newaxis, np.newaxis,  np.newaxis], ind2[:,np.newaxis, np.newaxis], ind3[:, np.newaxis], ind4)
+    
 class GravitySource:
     """Gravitational field sources
     
