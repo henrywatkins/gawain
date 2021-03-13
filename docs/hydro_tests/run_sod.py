@@ -13,7 +13,6 @@ with_resistivity = False
 
 t_max = 0.25
 
-# "euler", "rk2", "leapfrog", "predictor-corrector"
 integrator = "euler"
 # "base", "lax-wendroff", "lax-friedrichs", "vanleer", "hll"
 fluxer = "hll"
