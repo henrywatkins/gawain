@@ -58,7 +58,7 @@ mx = np.zeros(mesh_shape)
 my = rho * 0.01 * 0.25 * (1.0 + np.cos(4 * PI * X)) * (1.0 + np.cos(3 * PI * Y))
 mz = np.zeros(mesh_shape)
 
-e = pressure / (adiabatic_idx - 1.0) + 0.5 * (mx ** 2 + my ** 2 + mz ** 2) / rho
+e = pressure / (adiabatic_idx - 1.0) + 0.5 * (mx**2 + my**2 + mz**2) / rho
 
 initial_condition = np.array([rho, mx, my, mz, e])
 

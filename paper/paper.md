@@ -15,82 +15,32 @@ date: 6 March 2021
 bibliography: paper.bib
 ---
 
-# Summary
+## Gawain: A Python Package for 2D Magnetohydrodynamics
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+### Summary
 
-# Statement of need
+Gawain is a Python package designed for simulating two-dimensional magnetohydrodynamic (MHD) systems. It provides a framework for modeling both inviscid, compressible hydrodynamics and ideal MHD in two dimensions. The package is tailored for simplicity and ease of use, making it accessible to researchers and students in the field of plasma physics. Gawain leverages Python's capabilities to offer a flexible simulation environment with minimal dependencies, ensuring that users can easily set up and run simulations without extensive software overhead.
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+### Statement of Need
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
+The study of magnetohydrodynamics is crucial for understanding various physical phenomena in astrophysics, fusion research, and space physics. However, existing MHD simulation tools can be complex and challenging to use, especially for those new to computational physics. Gawain addresses this gap by providing a straightforward, Python-based solution that allows users to perform MHD simulations with ease. Its simplicity does not compromise its functionality, as it includes essential features such as different boundary conditions (fixed-value, reflective, periodic, outflow) and the ability to simulate the effects of gravitational fields or arbitrary source functions on fluid dynamics. This makes Gawain an invaluable tool for educational purposes and preliminary research investigations where ease of use and flexibility are paramount.
 
-# Mathematics
+### Features
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
+- **Simulation Capabilities**: Supports 2D inviscid, compressible hydrodynamics and ideal MHD.
+- **Boundary Conditions**: Offers fixed-value, reflective, periodic, and outflow boundary conditions.
+- **Flexibility**: Allows for simulations with gravitational fields or arbitrary source functions.
+- **Integration Methods**: Includes several integrators such as Euler, Lax-Wendroff, Lax-Friedrichs, Van Leer, and HLL flux solvers.
+- **Minimal Dependencies**: Designed to be lightweight with few external library requirements.
 
-Double dollars make self-standing equations:
+### Getting Started
 
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
+To begin using Gawain, users can install the package via the standard Python setup process. Example scripts and Jupyter notebooks are provided in the documentation directory to guide users through creating and running simulations. Users can configure their simulations by setting parameters in a Python dictionary and passing them to the `rungawain` function. This approach ensures that even those with limited programming experience can effectively utilize the software for their research needs.
 
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
+### Conclusion
 
-# Citations
+Gawain is a powerful yet user-friendly tool that democratizes access to MHD simulations. Its focus on simplicity makes it an excellent choice for educational settings and initial research explorations in plasma physics. By reducing the complexity typically associated with MHD simulation software, Gawain enables a broader audience to engage with advanced computational modeling techniques.
 
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
-
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
-
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
-
-# Figures
-
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
-
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% }
-
-# Acknowledgements
-
-
-
-# References
+Citations:
+[1] https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_3e2af07f-d831-482e-a8b4-84c459a2dc9e/1f80d06d-68ca-45fe-a478-e107c64f351f/paper.md
+[2] https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_3e2af07f-d831-482e-a8b4-84c459a2dc9e/f01d9e5c-1651-4be1-bd7c-34ae6ffbc2c5/README.md

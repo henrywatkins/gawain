@@ -79,7 +79,7 @@ bz = np.zeros(mesh_shape)
 
 pressure = np.ones(mesh_shape)
 
-mag_pressure = 0.5 * (bx ** 2 + by ** 2 + bz ** 2)
+mag_pressure = 0.5 * (bx**2 + by**2 + bz**2)
 
 e = (
     pressure / (adiabatic_idx - 1)
