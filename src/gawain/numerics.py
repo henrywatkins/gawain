@@ -169,6 +169,20 @@ class SolutionVector:
         lambda2 = yvel + cs
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
+    def calculate_min_max_wave_speeds_Z(self):
+        """Return the the minimum and maximum wave speeds in the Z direction
+
+        Returns
+        -------
+        Tuple[ndarray, ndarray]
+            the minimum and maximum wave speeds in the z direction for each cell
+        """
+        zvel = self.velZ()
+        cs = self.sound_speed()
+        lambda1 = zvel - cs
+        lambda2 = zvel + cs
+        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+
     def calculate_timestep(self):
         """Calculate the timestep size, using the wave speeds and CFL value
 
@@ -179,11 +193,14 @@ class SolutionVector:
         """
         min_wave_speed_x, max_wave_speed_x = self.calculate_min_max_wave_speeds_X()
         min_wave_speed_y, max_wave_speed_y = self.calculate_min_max_wave_speeds_Y()
+        min_wave_speed_z, max_wave_speed_z = self.calculate_min_max_wave_speeds_Z()
         max_in_x = max(np.abs(min_wave_speed_x).max(), np.abs(max_wave_speed_x).max())
         max_in_y = max(np.abs(min_wave_speed_y).max(), np.abs(max_wave_speed_y).max())
+        max_in_z = max(np.abs(min_wave_speed_z).max(), np.abs(max_wave_speed_z).max())
         timestep_x = self.cfl * self.dx / max_in_x
         timestep_y = self.cfl * self.dy / max_in_y
-        self.timestep = min(timestep_x, timestep_y)
+        timestep_z = self.cfl * self.dz / max_in_z
+        self.timestep = min(timestep_x, timestep_y, timestep_z)
         return self.timestep
 
     def set_centroid(self, array):
@@ -411,6 +428,14 @@ class MHDSolutionVector(SolutionVector):
         quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vay2 * vs2)
         return np.sqrt(0.5 * quad)
 
+    def fast_magnetosonic_speed_Z(self):
+        """Return the fast magnetosonic speed in the z direction for each mesh cell"""
+        va2 = self.alfven_speed() ** 2
+        vs2 = self.sound_speed() ** 2
+        vaz2 = self.magZ() ** 2 / self.dens()
+        quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vaz2 * vs2)
+        return np.sqrt(0.5 * quad)
+
     def calculate_min_max_wave_speeds_X(self):
         """Return the the minimum and maximum wave speeds in the X direction
 
@@ -438,6 +463,21 @@ class MHDSolutionVector(SolutionVector):
         cf = self.fast_magnetosonic_speed_Y()
         lambda1 = yvel - cf
         lambda2 = yvel + cf
+
+        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+
+    def calculate_min_max_wave_speeds_Z(self):
+        """Return the the minimum and maximum wave speeds in the Z direction
+
+        Returns
+        -------
+        Tuple[ndarray, ndarray]
+            the minimum and maximum wave speeds in the z direction for each cell
+        """
+        zvel = self.velZ()
+        cf = self.fast_magnetosonic_speed_Z()
+        lambda1 = zvel - cf
+        lambda2 = zvel + cf
 
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 

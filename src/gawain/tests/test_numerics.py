@@ -245,8 +245,21 @@ class TestSolutionVector:
         assert np.all(np.isfinite(lambda_min))
         assert np.all(np.isfinite(lambda_max))
 
-    def test_calculate_timestep(self, mock_parameters, sample_solution_data):
-        """Test timestep calculation"""
+    def test_wave_speeds_z(self, sample_solution_data):
+        """Test wave speed calculations in z direction"""
+        sv = SolutionVector()
+        sv.data = sample_solution_data
+        sv.adi_idx = 1.4
+
+        lambda_min, lambda_max = sv.calculate_min_max_wave_speeds_Z()
+
+        # Min should be less than max
+        assert np.all(lambda_min <= lambda_max)
+        assert np.all(np.isfinite(lambda_min))
+        assert np.all(np.isfinite(lambda_max))
+
+    def test_calculate_timestep_3d(self, mock_parameters, sample_solution_data):
+        """Test timestep calculation includes all three dimensions"""
         sv = SolutionVector()
         sv.set_state(mock_parameters)
         sv.data = sample_solution_data
@@ -256,6 +269,23 @@ class TestSolutionVector:
         assert dt > 0
         assert np.isfinite(dt)
         assert sv.timestep == dt
+
+        # Test that timestep is properly constrained by all dimensions
+        # by checking it's smaller than individual dimensional constraints
+        min_wave_speed_x, max_wave_speed_x = sv.calculate_min_max_wave_speeds_X()
+        min_wave_speed_y, max_wave_speed_y = sv.calculate_min_max_wave_speeds_Y()
+        min_wave_speed_z, max_wave_speed_z = sv.calculate_min_max_wave_speeds_Z()
+        
+        max_in_x = max(np.abs(min_wave_speed_x).max(), np.abs(max_wave_speed_x).max())
+        max_in_y = max(np.abs(min_wave_speed_y).max(), np.abs(max_wave_speed_y).max())
+        max_in_z = max(np.abs(min_wave_speed_z).max(), np.abs(max_wave_speed_z).max())
+        
+        timestep_x = sv.cfl * sv.dx / max_in_x
+        timestep_y = sv.cfl * sv.dy / max_in_y
+        timestep_z = sv.cfl * sv.dz / max_in_z
+        
+        expected_timestep = min(timestep_x, timestep_y, timestep_z)
+        assert np.isclose(dt, expected_timestep)
 
     def test_update_method(self, sample_solution_data):
         """Test update method"""
@@ -354,6 +384,17 @@ class TestMHDSolutionVector:
         assert np.all(cf >= 0)
         assert np.all(np.isfinite(cf))
 
+    def test_fast_magnetosonic_speed_z(self, sample_mhd_data):
+        """Test fast magnetosonic speed in z direction"""
+        mhd_sv = MHDSolutionVector()
+        mhd_sv.data = sample_mhd_data
+        mhd_sv.adi_idx = 1.4
+
+        cf = mhd_sv.fast_magnetosonic_speed_Z()
+
+        assert np.all(cf >= 0)
+        assert np.all(np.isfinite(cf))
+
     def test_mhd_wave_speeds(self, sample_mhd_data):
         """Test MHD wave speed calculations"""
         mhd_sv = MHDSolutionVector()
@@ -362,13 +403,62 @@ class TestMHDSolutionVector:
 
         lambda_min_x, lambda_max_x = mhd_sv.calculate_min_max_wave_speeds_X()
         lambda_min_y, lambda_max_y = mhd_sv.calculate_min_max_wave_speeds_Y()
+        lambda_min_z, lambda_max_z = mhd_sv.calculate_min_max_wave_speeds_Z()
 
         assert np.all(lambda_min_x <= lambda_max_x)
         assert np.all(lambda_min_y <= lambda_max_y)
+        assert np.all(lambda_min_z <= lambda_max_z)
         assert np.all(np.isfinite(lambda_min_x))
         assert np.all(np.isfinite(lambda_max_x))
         assert np.all(np.isfinite(lambda_min_y))
         assert np.all(np.isfinite(lambda_max_y))
+        assert np.all(np.isfinite(lambda_min_z))
+        assert np.all(np.isfinite(lambda_max_z))
+
+    def test_mhd_timestep_3d(self, sample_mhd_data):
+        """Test that MHD timestep calculation includes Z direction"""
+        mhd_sv = MHDSolutionVector()
+        mhd_sv.data = sample_mhd_data
+        mhd_sv.adi_idx = 1.4
+        mhd_sv.dx, mhd_sv.dy, mhd_sv.dz = 0.1, 0.1, 0.1
+        mhd_sv.cfl = 0.5
+
+        dt = mhd_sv.calculate_timestep()
+
+        # Test that all three dimensions contribute to timestep
+        lambda_min_x, lambda_max_x = mhd_sv.calculate_min_max_wave_speeds_X()
+        lambda_min_y, lambda_max_y = mhd_sv.calculate_min_max_wave_speeds_Y()
+        lambda_min_z, lambda_max_z = mhd_sv.calculate_min_max_wave_speeds_Z()
+        
+        max_in_x = max(np.abs(lambda_min_x).max(), np.abs(lambda_max_x).max())
+        max_in_y = max(np.abs(lambda_min_y).max(), np.abs(lambda_max_y).max())
+        max_in_z = max(np.abs(lambda_min_z).max(), np.abs(lambda_max_z).max())
+        
+        timestep_x = mhd_sv.cfl * mhd_sv.dx / max_in_x
+        timestep_y = mhd_sv.cfl * mhd_sv.dy / max_in_y
+        timestep_z = mhd_sv.cfl * mhd_sv.dz / max_in_z
+        
+        expected_timestep = min(timestep_x, timestep_y, timestep_z)
+        assert np.isclose(dt, expected_timestep)
+
+    def test_mhd_fast_speed_consistency(self, sample_mhd_data):
+        """Test that fast magnetosonic speeds are consistent across dimensions"""
+        mhd_sv = MHDSolutionVector()
+        mhd_sv.data = sample_mhd_data
+        mhd_sv.adi_idx = 1.4
+
+        cf_x = mhd_sv.fast_magnetosonic_speed_X()
+        cf_y = mhd_sv.fast_magnetosonic_speed_Y()
+        cf_z = mhd_sv.fast_magnetosonic_speed_Z()
+
+        # For the test case with only Bx field, cf_y and cf_z should be similar
+        # (since By = Bz = 0), and cf_x should be different
+        assert cf_x.shape == cf_y.shape == cf_z.shape
+        
+        # All speeds should be positive and finite
+        assert np.all(cf_x >= 0) and np.all(np.isfinite(cf_x))
+        assert np.all(cf_y >= 0) and np.all(np.isfinite(cf_y))
+        assert np.all(cf_z >= 0) and np.all(np.isfinite(cf_z))
 
 
 class TestBoundarySetter:

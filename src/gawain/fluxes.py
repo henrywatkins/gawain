@@ -195,10 +195,14 @@ class FluxCalculator:
         self.y_plus_flux = self.flux_functionY(u.plusY())
         self.y_minus_flux = self.flux_functionY(u.minusY())
 
+        self.z_plus_flux = self.flux_functionZ(u.plusZ())
+        self.z_minus_flux = self.flux_functionZ(u.minusZ())
+
         self._specific_fluxes(u)
 
-        total_flux = -(self.y_plus_flux - self.y_minus_flux) / u.dy
-        total_flux += -(self.x_plus_flux - self.x_minus_flux) / u.dx
+        total_flux = -(self.x_plus_flux - self.x_minus_flux) / u.dx
+        total_flux += -(self.y_plus_flux - self.y_minus_flux) / u.dy
+        total_flux += -(self.z_plus_flux - self.z_minus_flux) / u.dz
         return total_flux
 
 
@@ -273,6 +277,33 @@ class HLLFluxer(FluxCalculator):
             np.maximum(np.maximum(zeros, lambda_L_max), lambda_R_max),
         )
 
+    def wave_speeds_Z(self, Ul, Ur):
+        """Calculate the min/max wave speeds at the z-axis inteface
+        between two cells
+
+        Parameters
+        ----------
+        Ul : ndarray
+            the solution vector mesh data values to the left of the interface
+        Ur : ndarray
+            the solution vector mesh data values to the right of the interface
+
+        Returns
+        -------
+        Tuple[ndarray, ndarray]
+            the min and max wave speeds at the interface for each mesh cell
+        """
+
+        lambda_L_min, lambda_L_max = Ul.calculate_min_max_wave_speeds_Z()
+        lambda_R_min, lambda_R_max = Ur.calculate_min_max_wave_speeds_Z()
+
+        zeros = np.zeros(lambda_L_min.shape)
+
+        return (
+            np.minimum(np.minimum(zeros, lambda_L_min), lambda_R_min),
+            np.maximum(np.maximum(zeros, lambda_L_max), lambda_R_max),
+        )
+
     def hll_flux_X(self, Sl, Sr, Ul, Ur):
         """Calculate the HLLE flux at the x-axis interfaces"""
 
@@ -291,6 +322,19 @@ class HLLFluxer(FluxCalculator):
 
         fl = self.flux_functionY(Ul)
         fr = self.flux_functionY(Ur)
+
+        ur = Ur.centroid()
+        ul = Ul.centroid()
+
+        fhll = (Sr * fl - Sl * fr + Sl * Sr * (ur - ul)) / (Sr - Sl)
+
+        return np.where(Sl >= 0.0, fl, np.where(Sr <= 0.0, fr, fhll))
+
+    def hll_flux_Z(self, Sl, Sr, Ul, Ur):
+        """Calculate the HLLE flux at the z-axis interfaces"""
+
+        fl = self.flux_functionZ(Ul)
+        fr = self.flux_functionZ(Ur)
 
         ur = Ur.centroid()
         ul = Ul.centroid()
@@ -375,6 +419,44 @@ class HLLFluxer(FluxCalculator):
 
         return lefts, rights
 
+    def MUSCL_Hancock_reconstructionZ(self, U_left, U_mid, U_right):
+        """ "Calculate the MUSCL-hancock reconstruction of cell values
+        in the plus/minus z-directions.
+
+        note: this means lefts holds the states for the left of the i+1/2 face,
+        rights holds the states for the right of the i-1/2 face.
+        """
+        # reconstruct
+        umid = U_mid.centroid()
+        a = umid - U_left.centroid()
+        b = U_right.centroid() - umid
+
+        limited = self.minmod(a, b)
+
+        a = umid - 0.5 * limited
+        b = umid + 0.5 * limited
+
+        rights = U_mid.copy()
+        lefts = U_mid.copy()
+
+        rights.set_centroid(a)
+        lefts.set_centroid(b)
+
+        # evolve
+        self.z_plus_flux = self.flux_functionZ(rights)
+        self.z_minus_flux = self.flux_functionZ(lefts)
+
+        dt = U_mid.timestep
+        dz = U_mid.dz
+
+        a = a + 0.5 * dt * (self.z_plus_flux - self.z_minus_flux) / dz
+        b = b + 0.5 * dt * (self.z_plus_flux - self.z_minus_flux) / dz
+
+        rights.set_centroid(a)
+        lefts.set_centroid(b)
+
+        return lefts, rights
+
     def _specific_fluxes(self, u):
         """HLLE solver - specifc flux calculation"""
 
@@ -430,6 +512,33 @@ class HLLFluxer(FluxCalculator):
 
         self.y_plus_flux = self.hll_flux_Y(Sl, Sr, umid, uplus)
 
+        #### Z
+
+        uplus = u.plusZ()
+        uminus = u.minusZ()
+
+        lefts, rights = self.MUSCL_Hancock_reconstructionZ(uminus, u, uplus)
+
+        # HLL flux calculation
+
+        # minus flux calculation
+
+        umid = rights
+        uminus = lefts.minusZ()
+
+        Sl, Sr = self.wave_speeds_Z(uminus, umid)
+
+        self.z_minus_flux = self.hll_flux_Z(Sl, Sr, uminus, umid)
+
+        # plus flux calculation
+
+        umid = lefts
+        uplus = rights.plusZ()
+
+        Sl, Sr = self.wave_speeds_Z(umid, uplus)
+
+        self.z_plus_flux = self.hll_flux_Z(Sl, Sr, umid, uplus)
+
 
 class LaxFriedrichsFluxer(FluxCalculator):
     """Lax-Friedrichs method flux calculator
@@ -467,6 +576,16 @@ class LaxFriedrichsFluxer(FluxCalculator):
         u2 = u.plusY().centroid()
         self.y_plus_flux = 0.5 * ((self.y_plus_flux + mid_flux_y) - dy * (u2 - u1) / dt)
 
+        mid_flux_z = self.flux_functionZ(u)
+
+        u2 = u.minusZ().centroid()
+        self.z_minus_flux = 0.5 * (
+            (self.z_minus_flux + mid_flux_z) - dz * (u1 - u2) / dt
+        )
+
+        u2 = u.plusZ().centroid()
+        self.z_plus_flux = 0.5 * ((self.z_plus_flux + mid_flux_z) - dz * (u2 - u1) / dt)
+
 
 class LaxWendroffFluxer(FluxCalculator):
     """Lax-Wendroff method flux calculator
@@ -485,7 +604,7 @@ class LaxWendroffFluxer(FluxCalculator):
         dx, dy, dz = u.dx, u.dy, u.dz
         u1 = u.centroid()
 
-        ####
+        #### X direction
 
         mid_flux_x = self.flux_functionX(u)
 
@@ -510,7 +629,7 @@ class LaxWendroffFluxer(FluxCalculator):
         self.x_plus_flux = self.flux_functionX(uplus_star)
         self.x_minus_flux = self.flux_functionX(uminus_star)
 
-        ####
+        #### Y direction
 
         mid_flux_y = self.flux_functionY(u)
 
@@ -534,3 +653,28 @@ class LaxWendroffFluxer(FluxCalculator):
 
         self.y_plus_flux = self.flux_functionY(uplus_star)
         self.y_minus_flux = self.flux_functionY(uminus_star)
+
+        #### Z direction
+
+        mid_flux_z = self.flux_functionZ(u)
+
+        uplus = u.plusZ()
+        uminus = u.minusZ()
+
+        u2 = uplus.centroid()
+        intermediate_plus_z = 0.5 * (
+            (u1 + u2) - dt * (self.z_plus_flux - mid_flux_z) / dz
+        )
+
+        u2 = uminus.centroid()
+        intermediate_minus_z = 0.5 * (
+            (u1 + u2) - dt * (mid_flux_z - self.z_minus_flux) / dz
+        )
+
+        uplus_star = uplus.copy()
+        uplus_star.set_centroid(intermediate_plus_z)
+        uminus_star = uminus.copy()
+        uminus_star.set_centroid(intermediate_minus_z)
+
+        self.z_plus_flux = self.flux_functionZ(uplus_star)
+        self.z_minus_flux = self.flux_functionZ(uminus_star)

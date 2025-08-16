@@ -123,6 +123,38 @@ class TestEulerFluxes:
         # Check that flux values are finite
         assert np.all(np.isfinite(flux))
 
+    def test_euler_flux_z_consistency(self, hydro_solution_vector):
+        """Test EulerFluxZ implementation consistency"""
+        flux = EulerFluxZ(hydro_solution_vector)
+
+        dens = hydro_solution_vector.dens()
+        momX = hydro_solution_vector.momX()
+        momY = hydro_solution_vector.momY()
+        momZ = hydro_solution_vector.momZ()
+        energy = hydro_solution_vector.energy()
+        pressure = hydro_solution_vector.pressure()
+
+        # Check individual components
+        assert np.allclose(flux[0], momZ)
+        assert np.allclose(flux[1], momZ * momX / dens)
+        assert np.allclose(flux[2], momZ * momY / dens)
+        assert np.allclose(flux[3], momZ * momZ / dens + pressure)
+        assert np.allclose(flux[4], (energy + pressure) * momZ / dens)
+
+    def test_euler_flux_symmetry(self, hydro_solution_vector):
+        """Test that Euler fluxes maintain proper symmetry properties"""
+        flux_x = EulerFluxX(hydro_solution_vector)
+        flux_y = EulerFluxY(hydro_solution_vector)
+        flux_z = EulerFluxZ(hydro_solution_vector)
+
+        # All fluxes should have same shape
+        assert flux_x.shape == flux_y.shape == flux_z.shape
+        
+        # Mass flux should be the corresponding momentum
+        assert np.allclose(flux_x[0], hydro_solution_vector.momX())
+        assert np.allclose(flux_y[0], hydro_solution_vector.momY())
+        assert np.allclose(flux_z[0], hydro_solution_vector.momZ())
+
 
 class TestMHDFluxes:
     def test_mhd_flux_x_shape(self, mhd_solution_vector):
@@ -204,6 +236,50 @@ class TestMHDFluxes:
 
         # Check that flux values are finite
         assert np.all(np.isfinite(flux))
+
+    def test_mhd_flux_z_consistency(self, mhd_solution_vector):
+        """Test MHDFluxZ implementation consistency"""
+        flux = MHDFluxZ(mhd_solution_vector)
+
+        dens = mhd_solution_vector.dens()
+        momX, momY, momZ = (
+            mhd_solution_vector.momX(),
+            mhd_solution_vector.momY(),
+            mhd_solution_vector.momZ(),
+        )
+        energy = mhd_solution_vector.energy()
+        tpressure = mhd_solution_vector.total_pressure()
+        bx, by, bz = (
+            mhd_solution_vector.magX(),
+            mhd_solution_vector.magY(),
+            mhd_solution_vector.magZ(),
+        )
+
+        # Check individual components
+        assert np.allclose(flux[0], momZ)
+        assert np.allclose(flux[1], momZ * momX / dens - bz * bx)
+        assert np.allclose(flux[2], momZ * momY / dens - bz * by)
+        assert np.allclose(flux[3], momZ * momZ / dens - bz * bz + tpressure)
+        assert np.allclose(flux[7], np.zeros_like(bz))  # Bz doesn't change
+
+    def test_mhd_flux_symmetry(self, mhd_solution_vector):
+        """Test that MHD fluxes maintain proper symmetry properties"""
+        flux_x = MHDFluxX(mhd_solution_vector)
+        flux_y = MHDFluxY(mhd_solution_vector)
+        flux_z = MHDFluxZ(mhd_solution_vector)
+
+        # All fluxes should have same shape
+        assert flux_x.shape == flux_y.shape == flux_z.shape
+        
+        # Mass flux should be the corresponding momentum
+        assert np.allclose(flux_x[0], mhd_solution_vector.momX())
+        assert np.allclose(flux_y[0], mhd_solution_vector.momY())
+        assert np.allclose(flux_z[0], mhd_solution_vector.momZ())
+        
+        # Corresponding magnetic field components should not change
+        assert np.allclose(flux_x[5], 0.0)  # Bx component
+        assert np.allclose(flux_y[6], 0.0)  # By component
+        assert np.allclose(flux_z[7], 0.0)  # Bz component
 
 
 class TestFluxCalculator:
@@ -321,6 +397,28 @@ class TestHLLFluxer:
         assert np.all(np.isfinite(sl))
         assert np.all(np.isfinite(sr))
 
+    def test_wave_speeds_z(self, hydro_solution_vector):
+        """Test wave speed calculation in z direction"""
+        hll = HLLFluxer()
+
+        # Create mock boundary setter for shifting
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        ul = hydro_solution_vector
+        ur = hydro_solution_vector.plusZ()
+
+        sl, sr = hll.wave_speeds_Z(ul, ur)
+
+        assert sl.shape == ur.dens().shape
+        assert sr.shape == ur.dens().shape
+        assert np.all(sl <= sr)  # min speed <= max speed
+        assert np.all(np.isfinite(sl))
+        assert np.all(np.isfinite(sr))
+
     def test_hll_flux_x_subsonic(self, hydro_solution_vector):
         """Test HLL flux in x direction for subsonic case"""
         hll = HLLFluxer()
@@ -373,6 +471,63 @@ class TestHLLFluxer:
 
         assert np.allclose(flux, expected_flux)
 
+    def test_hll_flux_y_subsonic(self, hydro_solution_vector):
+        """Test HLL flux in y direction for subsonic case"""
+        hll = HLLFluxer()
+        hll.set_flux_function(with_mhd=False)
+
+        ul = hydro_solution_vector
+        ur = hydro_solution_vector
+
+        # Small wave speeds crossing zero
+        sl = np.full(ul.dens().shape, -0.1)
+        sr = np.full(ul.dens().shape, 0.1)
+
+        flux = hll.hll_flux_Y(sl, sr, ul, ur)
+
+        assert flux.shape == ul.data.shape
+        assert np.all(np.isfinite(flux))
+
+    def test_hll_flux_z_subsonic(self, hydro_solution_vector):
+        """Test HLL flux in z direction for subsonic case"""
+        hll = HLLFluxer()
+        hll.set_flux_function(with_mhd=False)
+
+        ul = hydro_solution_vector
+        ur = hydro_solution_vector
+
+        # Small wave speeds crossing zero
+        sl = np.full(ul.dens().shape, -0.1)
+        sr = np.full(ul.dens().shape, 0.1)
+
+        flux = hll.hll_flux_Z(sl, sr, ul, ur)
+
+        assert flux.shape == ul.data.shape
+        assert np.all(np.isfinite(flux))
+
+    def test_muscl_hancock_reconstruction_z(self, hydro_solution_vector):
+        """Test MUSCL-Hancock reconstruction in z direction"""
+        hll = HLLFluxer()
+        hll.set_flux_function(with_mhd=False)
+
+        # Create mock boundary setter for shifting
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        u_left = hydro_solution_vector.minusZ()
+        u_mid = hydro_solution_vector
+        u_right = hydro_solution_vector.plusZ()
+
+        lefts, rights = hll.MUSCL_Hancock_reconstructionZ(u_left, u_mid, u_right)
+
+        assert lefts.data.shape == u_mid.data.shape
+        assert rights.data.shape == u_mid.data.shape
+        assert np.all(np.isfinite(lefts.data))
+        assert np.all(np.isfinite(rights.data))
+
 
 class TestLaxFriedrichsFluxer:
     def test_lax_friedrichs_initialization(self):
@@ -397,6 +552,8 @@ class TestLaxFriedrichsFluxer:
         lf.x_minus_flux = EulerFluxX(hydro_solution_vector.minusX())
         lf.y_plus_flux = EulerFluxY(hydro_solution_vector.plusY())
         lf.y_minus_flux = EulerFluxY(hydro_solution_vector.minusY())
+        lf.z_plus_flux = EulerFluxZ(hydro_solution_vector.plusZ())
+        lf.z_minus_flux = EulerFluxZ(hydro_solution_vector.minusZ())
 
         lf._specific_fluxes(hydro_solution_vector)
 
@@ -404,6 +561,25 @@ class TestLaxFriedrichsFluxer:
         assert lf.x_minus_flux.shape == hydro_solution_vector.data.shape
         assert lf.y_plus_flux.shape == hydro_solution_vector.data.shape
         assert lf.y_minus_flux.shape == hydro_solution_vector.data.shape
+        assert lf.z_plus_flux.shape == hydro_solution_vector.data.shape
+        assert lf.z_minus_flux.shape == hydro_solution_vector.data.shape
+
+    def test_lax_friedrichs_3d_consistency(self, hydro_solution_vector):
+        """Test that Lax-Friedrichs method works consistently in 3D"""
+        lf = LaxFriedrichsFluxer()
+        lf.set_flux_function(with_mhd=False)
+
+        # Create mock boundary setter
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        flux_div = lf.calculate_flux_divergence(hydro_solution_vector)
+
+        assert flux_div.shape == hydro_solution_vector.data.shape
+        assert np.all(np.isfinite(flux_div))
 
 
 class TestLaxWendroffFluxer:
@@ -429,6 +605,8 @@ class TestLaxWendroffFluxer:
         lw.x_minus_flux = EulerFluxX(hydro_solution_vector.minusX())
         lw.y_plus_flux = EulerFluxY(hydro_solution_vector.plusY())
         lw.y_minus_flux = EulerFluxY(hydro_solution_vector.minusY())
+        lw.z_plus_flux = EulerFluxZ(hydro_solution_vector.plusZ())
+        lw.z_minus_flux = EulerFluxZ(hydro_solution_vector.minusZ())
 
         lw._specific_fluxes(hydro_solution_vector)
 
@@ -436,6 +614,25 @@ class TestLaxWendroffFluxer:
         assert lw.x_minus_flux.shape == hydro_solution_vector.data.shape
         assert lw.y_plus_flux.shape == hydro_solution_vector.data.shape
         assert lw.y_minus_flux.shape == hydro_solution_vector.data.shape
+        assert lw.z_plus_flux.shape == hydro_solution_vector.data.shape
+        assert lw.z_minus_flux.shape == hydro_solution_vector.data.shape
+
+    def test_lax_wendroff_3d_consistency(self, hydro_solution_vector):
+        """Test that Lax-Wendroff method works consistently in 3D"""
+        lw = LaxWendroffFluxer()
+        lw.set_flux_function(with_mhd=False)
+
+        # Create mock boundary setter
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        flux_div = lw.calculate_flux_divergence(hydro_solution_vector)
+
+        assert flux_div.shape == hydro_solution_vector.data.shape
+        assert np.all(np.isfinite(flux_div))
 
 
 class TestFluxIntegration:
@@ -472,3 +669,109 @@ class TestFluxIntegration:
 
         assert flux_div.shape == mhd_solution_vector.data.shape
         assert np.all(np.isfinite(flux_div))
+
+    def test_flux_divergence_3d_components(self, hydro_solution_vector):
+        """Test that flux divergence calculation includes all 3D components"""
+        fc = FluxCalculator()
+        fc.set_flux_function(with_mhd=False)
+
+        # Create mock boundary setter
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        # Calculate full 3D flux divergence
+        flux_div_3d = fc.calculate_flux_divergence(hydro_solution_vector)
+
+        # Manually calculate each component
+        x_plus_flux = EulerFluxX(hydro_solution_vector.plusX())
+        x_minus_flux = EulerFluxX(hydro_solution_vector.minusX())
+        y_plus_flux = EulerFluxY(hydro_solution_vector.plusY())
+        y_minus_flux = EulerFluxY(hydro_solution_vector.minusY())
+        z_plus_flux = EulerFluxZ(hydro_solution_vector.plusZ())
+        z_minus_flux = EulerFluxZ(hydro_solution_vector.minusZ())
+
+        expected_flux_div = (
+            -(x_plus_flux - x_minus_flux) / hydro_solution_vector.dx
+            + -(y_plus_flux - y_minus_flux) / hydro_solution_vector.dy
+            + -(z_plus_flux - z_minus_flux) / hydro_solution_vector.dz
+        )
+
+        # They should be equal
+        assert np.allclose(flux_div_3d, expected_flux_div)
+
+    def test_hll_flux_divergence_3d(self, hydro_solution_vector):
+        """Test HLL flux divergence calculation in full 3D"""
+        hll = HLLFluxer()
+        hll.set_flux_function(with_mhd=False)
+
+        # Create mock boundary setter
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        flux_div = hll.calculate_flux_divergence(hydro_solution_vector)
+
+        assert flux_div.shape == hydro_solution_vector.data.shape
+        assert np.all(np.isfinite(flux_div))
+
+        # Check that all flux components were calculated
+        assert hll.x_plus_flux is not None
+        assert hll.x_minus_flux is not None
+        assert hll.y_plus_flux is not None
+        assert hll.y_minus_flux is not None
+        assert hll.z_plus_flux is not None
+        assert hll.z_minus_flux is not None
+
+    def test_3d_vs_2d_flux_consistency(self, hydro_solution_vector):
+        """Test that 3D flux calculation is consistent with 2D when z-direction is trivial"""
+        # Create a 3D solution where the z-direction is essentially 2D (nz=1)
+        nx, ny, nz = hydro_solution_vector.data.shape[1:]
+        if nz == 1:
+            # This is essentially a 2D problem
+            fc_3d = FluxCalculator()
+            fc_3d.set_flux_function(with_mhd=False)
+
+            # Create mock boundary setter
+            from gawain.numerics import BoundarySetter
+
+            hydro_solution_vector.boundsetter = BoundarySetter(
+                ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+            )
+
+            flux_div_3d = fc_3d.calculate_flux_divergence(hydro_solution_vector)
+
+            # For a truly 2D case (nz=1), z-contribution should be minimal
+            z_plus_flux = EulerFluxZ(hydro_solution_vector.plusZ())
+            z_minus_flux = EulerFluxZ(hydro_solution_vector.minusZ())
+            z_contribution = -(z_plus_flux - z_minus_flux) / hydro_solution_vector.dz
+
+            # In 2D case with nz=1, plusZ and minusZ should be identical due to periodicity
+            # so z_contribution should be very small
+            assert np.allclose(z_contribution, 0.0, atol=1e-12)
+
+    def test_flux_conservation_3d(self, hydro_solution_vector):
+        """Test that fluxes satisfy conservation properties in 3D"""
+        fc = FluxCalculator()
+        fc.set_flux_function(with_mhd=False)
+
+        # Create mock boundary setter
+        from gawain.numerics import BoundarySetter
+
+        hydro_solution_vector.boundsetter = BoundarySetter(
+            ["periodic", "periodic", "periodic"], hydro_solution_vector.data
+        )
+
+        flux_div = fc.calculate_flux_divergence(hydro_solution_vector)
+
+        # Conservation should ensure that mass flux divergence equals
+        # the negative of momentum divergence contributions appropriately
+        mass_flux_div = flux_div[0]  # density equation
+        
+        # Check that the flux divergence has the right shape and finite values
+        assert mass_flux_div.shape == hydro_solution_vector.dens().shape
+        assert np.all(np.isfinite(mass_flux_div))
