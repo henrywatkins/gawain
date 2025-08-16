@@ -3,12 +3,13 @@ __pycache__/
 
 # dist files
 *.egg-info/
-
+runs/
 # data files
 *.h5
 *.npz
 *.npy
-
+.venv
+.pytest_cache/
 # ipynb checkpoints
 example_scripts/.ipynb_checkpoints/
 gawain/.ipynb_checkpoints/

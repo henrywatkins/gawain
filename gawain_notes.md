@@ -80,6 +80,5 @@ Problem was due to errors in MHD flux function calculation and in the magnetoson
 - GPU support
 - HLLD solver
 - 3D support
-- type hints
 - resistivity
 - thermal conductivity
