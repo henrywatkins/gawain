@@ -7,8 +7,8 @@ classes for both hydro and mhd.
 
 import time
 
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
 
 
 class Clock:
@@ -476,7 +476,9 @@ class BoundarySetter:
             stencil_arm[boundary_index_set] = self.initial_values[boundary_index_set]
         elif boundary_type == "reflective":
             boundary_index_set = self.get_boundary_indices(axis, direction, shape)
-            velocity_boundary_indices = self.velocity_boundary_indices(axis, direction)
+            velocity_boundary_indices = self.velocity_boundary_indices(
+                axis, direction, shape
+            )
             stencil_arm[boundary_index_set] = array[boundary_index_set]
             stencil_arm[velocity_boundary_indices] = -array[velocity_boundary_indices]
 

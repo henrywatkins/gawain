@@ -1,7 +1,7 @@
-"""Kelvin-Helmholtz instability test script
-"""
+"""Kelvin-Helmholtz instability test script"""
 
 import numpy as np
+
 from gawain.main import run_gawain
 
 run_name = "kelvin_helmholtz"

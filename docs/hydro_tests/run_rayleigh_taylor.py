@@ -5,8 +5,9 @@ instability test
 """
 
 import numpy as np
-from gawain.main import run_gawain
 from scipy.constants import pi as PI
+
+from gawain.main import run_gawain
 
 run_name = "rayleigh_taylor"
 output_dir = "."

@@ -1,6 +1,7 @@
-""" test file for input """
+"""test file for input"""
 
 import numpy as np
+
 from gawain.main import run_gawain
 
 run_name = "sod_shock_tube"

@@ -1,4 +1,4 @@
-"""Integrators 
+"""Integrators
 
 These integrators take a solution vector and integrate
 (update) the solution depending on some RHS; in practice

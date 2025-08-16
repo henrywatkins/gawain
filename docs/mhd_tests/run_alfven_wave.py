@@ -6,6 +6,7 @@ Alfven wave.
 
 import numpy as np
 import scipy.constants as cnst
+
 from gawain.main import run_gawain
 
 run_name = "alfven_wave"

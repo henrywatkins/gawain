@@ -1,14 +1,13 @@
 """GAWAIN
 
 A small ideal-MHD code for trying out
-hydrodynamics and magetohydrodynamics 
+hydrodynamics and magetohydrodynamics
 in python.
 
 """
 
 import gawain.io as io
 import gawain.numerics as nu
-
 
 PREAMBLE = """
    ______                     _

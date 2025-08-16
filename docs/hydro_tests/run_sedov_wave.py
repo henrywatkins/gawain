@@ -1,6 +1,7 @@
-"""Sedov spherical blast wave test script """
+"""Sedov spherical blast wave test script"""
 
 import numpy as np
+
 from gawain.main import run_gawain
 
 run_name = "sedov_blast_wave"

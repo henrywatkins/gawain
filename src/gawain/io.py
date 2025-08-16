@@ -1,19 +1,19 @@
-"""Input and Output utilities 
+"""Input and Output utilities
 
-These classes provide the means of passing the initial 
-condtitions and options of the simulation to the code, 
+These classes provide the means of passing the initial
+condtitions and options of the simulation to the code,
 the output class for dumping the simulation result, and a
 basic reading and plotting class to visualize the results.
 """
 
-import os
 import json
+import os
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-import gawain.integrators as integrator
 import gawain.fluxes as fluxes
+import gawain.integrators as integrator
 import gawain.numerics as nu
 
 

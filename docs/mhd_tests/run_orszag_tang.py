@@ -1,8 +1,8 @@
-"""Orszag-Tang vortex MHD test script
-"""
+"""Orszag-Tang vortex MHD test script"""
 
 import numpy as np
 from scipy.constants import pi as PI
+
 from gawain.main import run_gawain
 
 run_name = "orszag_tang"

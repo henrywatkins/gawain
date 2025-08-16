@@ -1,6 +1,7 @@
-"""2 interacting blast waves test script """
+"""2 interacting blast waves test script"""
 
 import numpy as np
+
 from gawain.main import run_gawain
 
 run_name = "blast_wave"

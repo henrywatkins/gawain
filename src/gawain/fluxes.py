@@ -1,7 +1,7 @@
 """Flux calculation routine
 
 These functions and classes are used for the
-physics-specific flux calculations for both 
+physics-specific flux calculations for both
 hydrodynamic and MHD fluxes
 
 """

@@ -1,8 +1,8 @@
-"""MHD rotor test script
-"""
+"""MHD rotor test script"""
 
 import numpy as np
 from scipy.constants import pi as PI
+
 from gawain.main import run_gawain
 
 run_name = "mhd_rotor"

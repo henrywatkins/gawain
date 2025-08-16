@@ -1,8 +1,8 @@
-"""Current sheet MHD test script
-"""
+"""Current sheet MHD test script"""
 
 import numpy as np
 from scipy.constants import pi as PI
+
 from gawain.main import run_gawain
 
 run_name = "current_sheet"

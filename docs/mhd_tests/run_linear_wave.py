@@ -5,6 +5,7 @@ This test aims to simulate a linear wave.
 
 import numpy as np
 import scipy.constants as cnst
+
 from gawain.main import run_gawain
 
 run_name = "linear_wave"
