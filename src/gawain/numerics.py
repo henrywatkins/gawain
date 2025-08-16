@@ -37,7 +37,7 @@ class Clock:
         self.end_time = Parameters.t_max
         self.next_output_time = 0.0
         self.output_spacing = self.end_time / Parameters.n_outputs
-        self.bar = tqdm(total=self.end_time + 0.01)
+        self.bar = tqdm(total=self.end_time + 0.01)#, bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')
         self.wallclock_start = time.process_time()
 
     def is_end(self):

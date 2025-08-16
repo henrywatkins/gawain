@@ -46,4 +46,4 @@ def run_gawain(config):
 
         clock.tick(dt)
 
-    print("\nSimulation Complete, duration:", clock.duration(), "seconds")
+    print(f"\nSimulation Complete, duration: {clock.duration():.2f} seconds")
