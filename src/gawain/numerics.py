@@ -38,7 +38,9 @@ class Clock:
         self.next_output_time = 0.0
         self.output_times = [self.current_time]
         self.output_spacing = self.end_time / Parameters.n_outputs
-        self.bar = tqdm(total=self.end_time + 0.01)#, bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')
+        self.bar = tqdm(
+            total=self.end_time + 0.01
+        )  # , bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')
         self.wallclock_start = time.process_time()
 
     def is_end(self):
@@ -68,7 +70,7 @@ class Clock:
         """calculate the total duration of the simulation in seconds"""
         wallclock_end = time.process_time()
         return wallclock_end - self.wallclock_start
-    
+
     def dump_times(self, save_loc):
         np.save(save_loc + "/T.npy", np.array(self.output_times))
 
@@ -105,6 +107,7 @@ class SolutionVector:
         self.boundary_value = None
         self.boundsetter = None
         self.dx, self.dy, self.dz = None, None, None
+        self.cell_sizes = (None, None, None)
         self.adi_idx = 1.4
         self.timestep = 0.0001
         self.cfl = 0.1
@@ -127,6 +130,7 @@ class SolutionVector:
         self.boundary_type = Parameters.boundary_type
         self.boundary_value = Parameters.boundary_value
         self.dx, self.dy, self.dz = Parameters.cell_sizes
+        self.cell_sizes = Parameters.cell_sizes
         self.adi_idx = Parameters.adi_idx
         self.set_centroid(Parameters.initial_condition)
         self.cfl = Parameters.cfl
@@ -141,6 +145,7 @@ class SolutionVector:
         new_vector.boundary_type = self.boundary_type
         new_vector.boundary_value = self.boundary_value
         new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
+        new_vector.cell_sizes = self.cell_sizes
         new_vector.adi_idx = self.adi_idx
         new_vector.timestep = self.timestep
         new_vector.boundsetter = self.boundsetter
@@ -263,6 +268,10 @@ class SolutionVector:
         new_vector.set_centroid(rolled)
         return new_vector
 
+    def get_neighbour_state(self, axis, direction):
+        """Get the neighbour state for the current solution vector"""
+        return self.shift(axis, direction)
+
     def plusX(self):
         """Shift all the solution data in the positive x direction"""
         return self.shift(0, 1)
@@ -304,6 +313,10 @@ class SolutionVector:
         """Return the density field data"""
         return self.data[0]
 
+    def mom(self, axis):
+        """Return the momentum field data for a given axis"""
+        return self.data[axis + 1]
+
     def momX(self):
         """Return the x-momentumm field data"""
         return self.data[1]
@@ -315,6 +328,10 @@ class SolutionVector:
     def momZ(self):
         """Return the z-momentum field data"""
         return self.data[3]
+
+    def vel(self, axis):
+        """Return the velocity field data for a given axis"""
+        return self.data[axis + 1] / self.data[0]
 
     def velX(self):
         """Return the x-velocity field data"""
@@ -374,10 +391,15 @@ class MHDSolutionVector(SolutionVector):
         new_vector.boundary_type = self.boundary_type
         new_vector.boundary_value = self.boundary_value
         new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
+        new_vector.cell_sizes = self.cell_sizes
         new_vector.adi_idx = self.adi_idx
         new_vector.timestep = self.timestep
         new_vector.boundsetter = self.boundsetter
         return new_vector
+
+    def mag(self, axis):
+        """Return the magnetic field data for a given axis"""
+        return self.data[axis + 5]
 
     def magX(self):
         """Return the x-direction magnetic field data"""

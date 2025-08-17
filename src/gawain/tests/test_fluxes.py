@@ -3,9 +3,18 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from gawain.fluxes import (EulerFluxX, EulerFluxY, EulerFluxZ, FluxCalculator,
-                           HLLFluxer, LaxFriedrichsFluxer, LaxWendroffFluxer,
-                           MHDFluxX, MHDFluxY, MHDFluxZ)
+from gawain.fluxes import (
+    EulerFluxX,
+    EulerFluxY,
+    EulerFluxZ,
+    FluxCalculator,
+    HLLFluxer,
+    LaxFriedrichsFluxer,
+    LaxWendroffFluxer,
+    MHDFluxX,
+    MHDFluxY,
+    MHDFluxZ,
+)
 from gawain.numerics import MHDSolutionVector, SolutionVector
 
 
@@ -149,7 +158,7 @@ class TestEulerFluxes:
 
         # All fluxes should have same shape
         assert flux_x.shape == flux_y.shape == flux_z.shape
-        
+
         # Mass flux should be the corresponding momentum
         assert np.allclose(flux_x[0], hydro_solution_vector.momX())
         assert np.allclose(flux_y[0], hydro_solution_vector.momY())
@@ -270,12 +279,12 @@ class TestMHDFluxes:
 
         # All fluxes should have same shape
         assert flux_x.shape == flux_y.shape == flux_z.shape
-        
+
         # Mass flux should be the corresponding momentum
         assert np.allclose(flux_x[0], mhd_solution_vector.momX())
         assert np.allclose(flux_y[0], mhd_solution_vector.momY())
         assert np.allclose(flux_z[0], mhd_solution_vector.momZ())
-        
+
         # Corresponding magnetic field components should not change
         assert np.allclose(flux_x[5], 0.0)  # Bx component
         assert np.allclose(flux_y[6], 0.0)  # By component
@@ -771,7 +780,7 @@ class TestFluxIntegration:
         # Conservation should ensure that mass flux divergence equals
         # the negative of momentum divergence contributions appropriately
         mass_flux_div = flux_div[0]  # density equation
-        
+
         # Check that the flux divergence has the right shape and finite values
         assert mass_flux_div.shape == hydro_solution_vector.dens().shape
         assert np.all(np.isfinite(mass_flux_div))

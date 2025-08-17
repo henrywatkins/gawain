@@ -3,8 +3,13 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from gawain.numerics import (BoundarySetter, Clock, GravitySource,
-                             MHDSolutionVector, SolutionVector)
+from gawain.numerics import (
+    BoundarySetter,
+    Clock,
+    GravitySource,
+    MHDSolutionVector,
+    SolutionVector,
+)
 
 
 @pytest.fixture
@@ -275,15 +280,15 @@ class TestSolutionVector:
         min_wave_speed_x, max_wave_speed_x = sv.calculate_min_max_wave_speeds_X()
         min_wave_speed_y, max_wave_speed_y = sv.calculate_min_max_wave_speeds_Y()
         min_wave_speed_z, max_wave_speed_z = sv.calculate_min_max_wave_speeds_Z()
-        
+
         max_in_x = max(np.abs(min_wave_speed_x).max(), np.abs(max_wave_speed_x).max())
         max_in_y = max(np.abs(min_wave_speed_y).max(), np.abs(max_wave_speed_y).max())
         max_in_z = max(np.abs(min_wave_speed_z).max(), np.abs(max_wave_speed_z).max())
-        
+
         timestep_x = sv.cfl * sv.dx / max_in_x
         timestep_y = sv.cfl * sv.dy / max_in_y
         timestep_z = sv.cfl * sv.dz / max_in_z
-        
+
         expected_timestep = min(timestep_x, timestep_y, timestep_z)
         assert np.isclose(dt, expected_timestep)
 
@@ -429,15 +434,15 @@ class TestMHDSolutionVector:
         lambda_min_x, lambda_max_x = mhd_sv.calculate_min_max_wave_speeds_X()
         lambda_min_y, lambda_max_y = mhd_sv.calculate_min_max_wave_speeds_Y()
         lambda_min_z, lambda_max_z = mhd_sv.calculate_min_max_wave_speeds_Z()
-        
+
         max_in_x = max(np.abs(lambda_min_x).max(), np.abs(lambda_max_x).max())
         max_in_y = max(np.abs(lambda_min_y).max(), np.abs(lambda_max_y).max())
         max_in_z = max(np.abs(lambda_min_z).max(), np.abs(lambda_max_z).max())
-        
+
         timestep_x = mhd_sv.cfl * mhd_sv.dx / max_in_x
         timestep_y = mhd_sv.cfl * mhd_sv.dy / max_in_y
         timestep_z = mhd_sv.cfl * mhd_sv.dz / max_in_z
-        
+
         expected_timestep = min(timestep_x, timestep_y, timestep_z)
         assert np.isclose(dt, expected_timestep)
 
@@ -454,7 +459,7 @@ class TestMHDSolutionVector:
         # For the test case with only Bx field, cf_y and cf_z should be similar
         # (since By = Bz = 0), and cf_x should be different
         assert cf_x.shape == cf_y.shape == cf_z.shape
-        
+
         # All speeds should be positive and finite
         assert np.all(cf_x >= 0) and np.all(np.isfinite(cf_x))
         assert np.all(cf_y >= 0) and np.all(np.isfinite(cf_y))

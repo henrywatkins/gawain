@@ -45,7 +45,6 @@ inner_mask = np.where(R <= R0)
 rho = np.ones(mesh_shape)
 
 
-
 mx = np.zeros(mesh_shape)
 my = np.zeros(mesh_shape)
 mz = np.zeros(mesh_shape)
@@ -54,7 +53,7 @@ bx = 100 * np.ones(mesh_shape) / np.sqrt(4 * PI)
 by = np.zeros(mesh_shape)
 bz = np.zeros(mesh_shape)
 
-pressure = 0.1*np.ones(mesh_shape)
+pressure = 0.1 * np.ones(mesh_shape)
 pressure[inner_mask] = 1000.0
 
 mag_pressure = 0.5 * (bx**2 + by**2 + bz**2)

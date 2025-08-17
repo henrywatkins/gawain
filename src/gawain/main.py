@@ -45,7 +45,7 @@ def run_gawain(config):
             output.dump(solution)
 
         clock.tick(dt)
-        
+
     clock.dump_times(output.save_dir)
 
     print(f"\nSimulation Complete, duration: {clock.duration():.2f} seconds")

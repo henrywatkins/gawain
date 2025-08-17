@@ -60,7 +60,7 @@ e = (
     + mag_pressure
 )
 
-initial_condition = np.array([rho, mx, my, mz, e,bx,by,bz])
+initial_condition = np.array([rho, mx, my, mz, e, bx, by, bz])
 
 ############## BOUNDARY CONDITION ######################
 # available types: periodic, fixed
