@@ -151,46 +151,12 @@ class SolutionVector:
         new_vector.boundsetter = self.boundsetter
         return new_vector
 
-    def calculate_min_max_wave_speeds_X(self):
-        """Return the the minimum and maximum wave speeds in the X direction
-
-        Returns
-        -------
-        Tuple[ndarray, ndarray]
-            the minimum and maximum wave speeds in the x direction for each cell
-        """
-        xvel = self.velX()
+    def calculate_min_max_wave_speeds(self, axis):
+        """Return the the minimum and maximum wave speeds along a given axis"""
+        vel = self.vel(axis)
         cs = self.sound_speed()
-        lambda1 = xvel - cs
-        lambda2 = xvel + cs
-        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
-
-    def calculate_min_max_wave_speeds_Y(self):
-        """Return the the minimum and maximum wave speeds in the Y direction
-
-        Returns
-        -------
-        Tuple[ndarray, ndarray]
-            the minimum and maximum wave speeds in the y direction for each cell
-        """
-        yvel = self.velY()
-        cs = self.sound_speed()
-        lambda1 = yvel - cs
-        lambda2 = yvel + cs
-        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
-
-    def calculate_min_max_wave_speeds_Z(self):
-        """Return the the minimum and maximum wave speeds in the Z direction
-
-        Returns
-        -------
-        Tuple[ndarray, ndarray]
-            the minimum and maximum wave speeds in the z direction for each cell
-        """
-        zvel = self.velZ()
-        cs = self.sound_speed()
-        lambda1 = zvel - cs
-        lambda2 = zvel + cs
+        lambda1 = vel - cs
+        lambda2 = vel + cs
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
     def calculate_timestep(self):
@@ -201,9 +167,9 @@ class SolutionVector:
         timestep : float
             the new timestep size dt
         """
-        min_wave_speed_x, max_wave_speed_x = self.calculate_min_max_wave_speeds_X()
-        min_wave_speed_y, max_wave_speed_y = self.calculate_min_max_wave_speeds_Y()
-        min_wave_speed_z, max_wave_speed_z = self.calculate_min_max_wave_speeds_Z()
+        min_wave_speed_x, max_wave_speed_x = self.calculate_min_max_wave_speeds(0)
+        min_wave_speed_y, max_wave_speed_y = self.calculate_min_max_wave_speeds(1)
+        min_wave_speed_z, max_wave_speed_z = self.calculate_min_max_wave_speeds(2)
         max_in_x = max(np.abs(min_wave_speed_x).max(), np.abs(max_wave_speed_x).max())
         max_in_y = max(np.abs(min_wave_speed_y).max(), np.abs(max_wave_speed_y).max())
         max_in_z = max(np.abs(min_wave_speed_z).max(), np.abs(max_wave_speed_z).max())
@@ -272,29 +238,6 @@ class SolutionVector:
         """Get the neighbour state for the current solution vector"""
         return self.shift(axis, direction)
 
-    def plusX(self):
-        """Shift all the solution data in the positive x direction"""
-        return self.shift(0, 1)
-
-    def minusX(self):
-        """Shift all the solution data in the negative x direction"""
-        return self.shift(0, -1)
-
-    def plusY(self):
-        """Shift all the solution data in the positive y direction"""
-        return self.shift(1, 1)
-
-    def minusY(self):
-        """Shift all the solution data in the negative y direction"""
-        return self.shift(1, -1)
-
-    def plusZ(self):
-        """Shift all the solution data in the positive z direction"""
-        return self.shift(2, 1)
-
-    def minusZ(self):
-        """Shift all the solution data in the neagtive z direction"""
-        return self.shift(2, -1)
 
     def update(self, array):
         """Update the solution vector data with an array of values
@@ -317,33 +260,9 @@ class SolutionVector:
         """Return the momentum field data for a given axis"""
         return self.data[axis + 1]
 
-    def momX(self):
-        """Return the x-momentumm field data"""
-        return self.data[1]
-
-    def momY(self):
-        """Return the y-momentum field data"""
-        return self.data[2]
-
-    def momZ(self):
-        """Return the z-momentum field data"""
-        return self.data[3]
-
     def vel(self, axis):
         """Return the velocity field data for a given axis"""
         return self.data[axis + 1] / self.data[0]
-
-    def velX(self):
-        """Return the x-velocity field data"""
-        return self.data[1] / self.data[0]
-
-    def velY(self):
-        """Return the y-velocity field data"""
-        return self.data[2] / self.data[0]
-
-    def velZ(self):
-        """Return the z-velocity field data"""
-        return self.data[3] / self.data[0]
 
     def momTotalSqr(self):
         """Return the total momentum squared field data |M|**2"""
@@ -401,18 +320,6 @@ class MHDSolutionVector(SolutionVector):
         """Return the magnetic field data for a given axis"""
         return self.data[axis + 5]
 
-    def magX(self):
-        """Return the x-direction magnetic field data"""
-        return self.data[5]
-
-    def magY(self):
-        """Return the y-direction magnetic field data"""
-        return self.data[6]
-
-    def magZ(self):
-        """Return the z-direction magnetic field data"""
-        return self.data[7]
-
     def magTotalSqr(self):
         """Return the total magnetic field squared data |B|**2"""
         return self.data[5] ** 2 + self.data[6] ** 2 + self.data[7] ** 2
@@ -439,75 +346,21 @@ class MHDSolutionVector(SolutionVector):
         """Return the Alfven speed for each mesh cell"""
         return np.sqrt(self.magTotalSqr() / self.dens())
 
-    def fast_magnetosonic_speed_X(self):
-        """Return the fast magnetosonic speed in the x direction for each mesh cell"""
+    def fast_magnetosonic_speed(self, axis):
+        """Return the fast magnetosonic speed in the specified direction for each mesh cell"""
         va2 = self.alfven_speed() ** 2
         vs2 = self.sound_speed() ** 2
-        vax2 = self.magX() ** 2 / self.dens()
+        vax2 = self.mag(axis) ** 2 / self.dens()
         quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vax2 * vs2)
         return np.sqrt(0.5 * quad)
 
-    def fast_magnetosonic_speed_Y(self):
-        """Return the fast magnetosonic speed in the y direction for each mesh cell"""
-        va2 = self.alfven_speed() ** 2
-        vs2 = self.sound_speed() ** 2
-        vay2 = self.magY() ** 2 / self.dens()
-        quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vay2 * vs2)
-        return np.sqrt(0.5 * quad)
-
-    def fast_magnetosonic_speed_Z(self):
-        """Return the fast magnetosonic speed in the z direction for each mesh cell"""
-        va2 = self.alfven_speed() ** 2
-        vs2 = self.sound_speed() ** 2
-        vaz2 = self.magZ() ** 2 / self.dens()
-        quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vaz2 * vs2)
-        return np.sqrt(0.5 * quad)
-
-    def calculate_min_max_wave_speeds_X(self):
-        """Return the the minimum and maximum wave speeds in the X direction
-
-        Returns
-        -------
-        Tuple[ndarray, ndarray]
-            the minimum and maximum wave speeds in the x direction for each cell
-        """
-        xvel = self.velX()
-        cf = self.fast_magnetosonic_speed_X()
-        lambda1 = xvel - cf
-        lambda2 = xvel + cf
-
+    def calculate_min_max_wave_speeds(self, axis):
+        """Return the the minimum and maximum wave speeds in the specified direction"""
+        vel = self.vel(axis)
+        cf = self.fast_magnetosonic_speed(axis)
+        lambda1 = vel - cf
+        lambda2 = vel + cf
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
-
-    def calculate_min_max_wave_speeds_Y(self):
-        """Return the the minimum and maximum wave speeds in the Y direction
-
-        Returns
-        -------
-        Tuple[ndarray, ndarray]
-            the minimum and maximum wave speeds in the y direction for each cell
-        """
-        yvel = self.velY()
-        cf = self.fast_magnetosonic_speed_Y()
-        lambda1 = yvel - cf
-        lambda2 = yvel + cf
-
-        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
-
-    def calculate_min_max_wave_speeds_Z(self):
-        """Return the the minimum and maximum wave speeds in the Z direction
-
-        Returns
-        -------
-        Tuple[ndarray, ndarray]
-            the minimum and maximum wave speeds in the z direction for each cell
-        """
-        zvel = self.velZ()
-        cf = self.fast_magnetosonic_speed_Z()
-        lambda1 = zvel - cf
-        lambda2 = zvel + cf
-
-        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
-
 
 class BoundarySetter:
     """Boundary value setting object
