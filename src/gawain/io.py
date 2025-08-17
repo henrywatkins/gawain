@@ -46,6 +46,10 @@ class Output:
             json.dump(Parameters.config, file)
 
         np.save(self.save_dir + "/initial_condition.npy", Parameters.initial_condition)
+        np.save(self.save_dir + "/X.npy", Parameters.mesh_grid[0])
+        np.save(self.save_dir + "/Y.npy", Parameters.mesh_grid[1])
+        np.save(self.save_dir + "/Z.npy", Parameters.mesh_grid[2])
+
 
         if Parameters.source_data is not None:
             np.save(
@@ -87,6 +91,7 @@ class Parameters:
         self.cfl = config["cfl"]
         self.mesh_shape = config["mesh_shape"]
         self.mesh_size = config["mesh_size"]
+        self.mesh_grid = config['mesh_grid']
         self.t_max = config["t_max"]
         self.n_outputs = config["n_dumps"]
         self.adi_idx = config["adi_idx"]
@@ -111,6 +116,7 @@ class Parameters:
         config.pop("initial_condition", None)
         config.pop("source", None)
         config.pop("gravity", None)
+        config.pop("mesh_grid", None)
         self.config = config
 
     def create_integrator(self):
@@ -231,6 +237,8 @@ class Reader:
         self.data_dim = self.run_config["mesh_shape"].count(1)
 
         self.data = {variable: [] for variable in self.variables}
+        self.grid = (np.load(self.file_path + "/X.npy"), np.load(self.file_path + "/Y.npy"), np.load(self.file_path + "/Z.npy"))
+        self.times = np.load(self.file_path + "/T.npy")
 
         for i in range(self.run_config["n_dumps"]):
             filename = self.file_path + "/gawain_output_" + str(i) + ".npy"
@@ -260,16 +268,17 @@ class Reader:
         to_plot = self.data[variable]
         # 1D runs
         if self.data_dim == 2:
+            x = np.squeeze(self.grid[0])
             new_shape = tuple(filter(lambda x: x > 1, to_plot.shape))
             to_plot = to_plot.reshape(new_shape)
             fig, ax = plt.subplots()
             ax.set_title("Plot of " + variable)
-            ax.set_xlim(0, new_shape[1])
+            #ax.set_xlim(0, new_shape[1])
             ax.set_ylim(vmin, vmax)
             ax.set_xlabel("x")
             ax.set_ylabel(variable)
             for step in timesteps:
-                ax.plot(to_plot[step], label="step=" + str(step))
+                ax.plot(x, to_plot[step], label=f"step={step}, t={self.times[step]:.2f}")
             ax.legend()
             if save_as:
                 plt.savefig(save_as)
@@ -286,17 +295,16 @@ class Reader:
             fig.suptitle("Plots of " + variable)
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
-                subplot.pcolormesh(
-                    to_plot[step],
+                subplot.pcolormesh(self.grid[0], self.grid[1], to_plot[step],
                     vmin=vmin,
                     vmax=vmax,
                     cmap="plasma",
                 )
-                subplot.set_xlim(0, new_shape[2])
-                subplot.set_ylim(0, new_shape[1])
+                #subplot.set_xlim(0, new_shape[2])
+                #subplot.set_ylim(0, new_shape[1])
                 subplot.set_xlabel("x")
                 subplot.set_ylabel("y")
-                subplot.set_title("timestep=" + str(step))
+                subplot.set_title(f"step={step}, t={self.times[step]:.2f}")
             if save_as:
                 plt.savefig(save_as)
             plt.show()

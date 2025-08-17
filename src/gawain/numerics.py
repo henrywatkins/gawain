@@ -36,6 +36,7 @@ class Clock:
         self.current_time = 0.0
         self.end_time = Parameters.t_max
         self.next_output_time = 0.0
+        self.output_times = [self.current_time]
         self.output_spacing = self.end_time / Parameters.n_outputs
         self.bar = tqdm(total=self.end_time + 0.01)#, bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')
         self.wallclock_start = time.process_time()
@@ -58,6 +59,7 @@ class Clock:
         """check if output should be dumped at this timestep"""
         if self.current_time >= self.next_output_time:
             self.next_output_time += self.output_spacing
+            self.output_times.append(self.current_time)
             return True
         else:
             return False
@@ -66,6 +68,9 @@ class Clock:
         """calculate the total duration of the simulation in seconds"""
         wallclock_end = time.process_time()
         return wallclock_end - self.wallclock_start
+    
+    def dump_times(self, save_loc):
+        np.save(save_loc + "/T.npy", np.array(self.output_times))
 
 
 class SolutionVector:
