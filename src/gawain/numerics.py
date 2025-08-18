@@ -150,8 +150,8 @@ class SolutionVector:
         new_vector.timestep = self.timestep
         new_vector.boundsetter = self.boundsetter
         return new_vector
-    
-    def eigen_speeds(self,axis):
+
+    def eigen_speeds(self, axis):
         """Return the eigen speeds along a given axis"""
         vel = self.vel(axis)
         cs = self.sound_speed()
@@ -180,11 +180,17 @@ class SolutionVector:
         timestep_y = self.cfl * self.dy / max_in_y
         timestep_z = self.cfl * self.dz / max_in_z
         self.timestep = min(timestep_x, timestep_y, timestep_z)
-        return self.timestep
+        return max(self.timestep, 1e-8)
 
     def set_centroid(self, array):
         """Set the data for each cell in the mesh"""
         self.data = array
+
+    def copy_with_data(self, array):
+        """Return a copy of the solution vector with new data"""
+        new_vector = self.copy()
+        new_vector.data = array
+        return new_vector
 
     def centroid(self):
         """Return the solution vector data for each mesh cell
@@ -241,7 +247,6 @@ class SolutionVector:
         """Get the neighbour state for the current solution vector"""
         return self.shift(axis, direction)
 
-
     def update(self, array):
         """Update the solution vector data with an array of values
 
@@ -279,7 +284,7 @@ class SolutionVector:
         """Return the thermal pressure field data"""
         thermal_en = self.energy() - 0.5 * self.momTotalSqr() / self.dens()
         pressure = (self.adi_idx - 1.0) * thermal_en
-        pressure = np.maximum(pressure, 0.0)
+        pressure = np.maximum(pressure, 1e-8)
         return pressure
 
     def sound_speed(self):
@@ -340,6 +345,7 @@ class MHDSolutionVector(SolutionVector):
             - self.magnetic_pressure()
         )
         pressure = (self.adi_idx - 1.0) * thermal_en
+        pressure = np.maximum(pressure, 1e-8)
         return pressure
 
     def total_pressure(self):
@@ -478,8 +484,8 @@ class GravitySource:
         gravity_source[2] = solvec.dens() * self.field[1]
         gravity_source[3] = solvec.dens() * self.field[2]
         gravity_source[4] = (
-            solvec.momX() * self.field[0]
-            + solvec.momY() * self.field[1]
-            + solvec.momZ() * self.field[2]
+            solvec.mom(0) * self.field[0]
+            + solvec.mom(1) * self.field[1]
+            + solvec.mom(2) * self.field[2]
         )
         return gravity_source

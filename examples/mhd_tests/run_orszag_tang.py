@@ -19,7 +19,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 128, 128, 1
+nx, ny, nz = 64, 64, 1
 
 mesh_shape = (nx, ny, nz)
 
@@ -36,7 +36,7 @@ X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 5. / 3.
+adiabatic_idx = 5.0 / 3.0
 
 rho = np.ones(mesh_shape)
 

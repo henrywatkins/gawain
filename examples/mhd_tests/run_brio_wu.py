@@ -7,7 +7,7 @@ from gawain.main import run_gawain
 run_name = "brio_wu_tube"
 output_dir = "runs"
 
-cfl = 0.5
+cfl = 0.8
 with_mhd = True
 with_thermal_conductivity = False
 with_resistivity = False
@@ -48,7 +48,7 @@ my = mx
 mz = mx
 
 
-bx = np.zeros(X.shape)
+bx = 0.75 * np.ones_like(X)
 by = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, -1.0])
 bz = np.zeros(X.shape)
 
@@ -72,6 +72,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,

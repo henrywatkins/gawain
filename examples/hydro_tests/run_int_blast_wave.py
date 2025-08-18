@@ -6,7 +6,7 @@ from gawain.main import run_gawain
 
 # Woodward colella blast wave problem
 run_name = "blast_wave"
-output_dir = "."
+output_dir = "runs"
 
 cfl = 0.1
 
@@ -21,7 +21,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 128, 1, 1
+nx, ny, nz = 512, 1, 1
 
 mesh_shape = (nx, ny, nz)
 
@@ -66,6 +66,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,

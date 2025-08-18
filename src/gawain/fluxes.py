@@ -52,7 +52,7 @@ def MHDFlux(u, axis):
         ]
     )
     flux[axis + 1] += tpressure
-    flux[axis + 5] = 0.
+    flux[axis + 5] = 0.0
     return flux
 
 
@@ -92,8 +92,6 @@ class FluxCalculator:
         return total_flux
 
 
-
-
 class HLLFluxer(FluxCalculator):
     """A MUSCL-Hancock HLL solver using minmod limiter
 
@@ -108,16 +106,15 @@ class HLLFluxer(FluxCalculator):
     def minmod(self, a, b):
         """minmod limiter"""
         return np.where(
-            a * b <= 0.0, 0.0, np.where(np.absolute(a) < np.absolute(b), a, b)
+            a * b > 0.0, np.sign(a) * np.minimum(np.abs(a), np.abs(b)), 0.0 * a
         )
-
 
     def wave_speeds(self, Ul, Ur, axis):
         """Calculate the min/max wave speeds at the inteface between two cells"""
         ulminusal, ulplusal = Ul.eigen_speeds(axis)
         urminusal, urplusal = Ur.eigen_speeds(axis)
         return np.minimum(ulminusal, urminusal), np.maximum(ulplusal, urplusal)
-    
+
     def hll_flux(self, Sl, Sr, Ul, Ur, axis):
         """Calculate the HLLE flux at the interface"""
 
@@ -129,56 +126,84 @@ class HLLFluxer(FluxCalculator):
 
         fhll = (Sr * fl - Sl * fr + Sl * Sr * (ur - ul)) / (Sr - Sl)
 
-        return np.select([Sl >= 0.0, Sr <= 0.0, (Sl <= 0.0) & (Sr >= 0.0)], [fl, fr, fhll])
+        return np.select(
+            [Sl >= 0.0, Sr <= 0.0, (Sl <= 0.0) & (Sr >= 0.0)], [fl, fr, fhll]
+        )
 
-    def MUSCL_Hancock_reconstruction(self, uminus ,u , uplus, axis):
+    def MUSCL_Hancock_reconstruction(self, uminus, u, uplus, axis):
         """Calculate the MUSCL-hancock reconstruction of cell values at an cell interface"""
 
-        
-        # reconstruct
-        umid = U_mid.centroid()
-        a = umid - U_left.centroid()
-        b = U_right.centroid() - umid
+        dt = u.timestep
+        delta = u.cell_sizes[axis]
 
-        limited = self.minmod(a, b)
+        u_ip1 = uplus.centroid()
+        u_i = u.centroid()
+        u_im1 = uminus.centroid()
+        u_im2 = uminus.get_neighbour_state(axis, -1).centroid()
+        u_ip2 = uplus.get_neighbour_state(axis, 1).centroid()
 
-        a = umid - 0.5 * limited
-        b = umid + 0.5 * limited
+        del_i_right = u_ip1 - u_i
+        del_i_left = u_i - u_im1
+        sigma_i = self.minmod(del_i_left, del_i_right)
 
-        rights = U_mid.copy()
-        lefts = U_mid.copy()
+        del_ip1_right = u_ip2 - u_ip1
+        del_ip1_left = u_ip1 - u_i
+        sigma_ip1 = self.minmod(del_ip1_right, del_ip1_left)
 
-        rights.set_centroid(a)
-        lefts.set_centroid(b)
+        del_im1_right = u_i - u_im1
+        del_im1_left = u_im1 - u_im2
+        sigma_im1 = self.minmod(del_im1_left, del_im1_right)
 
-        # evolve
-        plus_flux = self.flux_function(rights, axis)
-        minus_flux = self.flux_function(lefts, axis)
+        ul_im1 = u_im1 - 0.5 * sigma_im1
+        ur_im1 = u_im1 + 0.5 * sigma_im1
 
-        dt = U_mid.timestep
-        delta = U_mid.cell_sizes[axis]
+        ul_ip1 = u_ip1 - 0.5 * sigma_ip1
+        ur_ip1 = u_ip1 + 0.5 * sigma_ip1
 
-        correction = 0.5 * dt * (plus_flux - minus_flux) / delta
-        a += correction
-        b += correction
+        ul_i = u_i - 0.5 * sigma_i
+        ur_i = u_i + 0.5 * sigma_i
 
-        rights.set_centroid(a)
-        lefts.set_centroid(b)
+        FL_i = self.flux_function(u.copy_with_data(ul_i), axis)
+        FR_i = self.flux_function(u.copy_with_data(ur_i), axis)
+        FL_ip1 = self.flux_function(u.copy_with_data(ul_ip1), axis)
+        FR_ip1 = self.flux_function(u.copy_with_data(ur_ip1), axis)
+        FL_im1 = self.flux_function(u.copy_with_data(ul_im1), axis)
+        FR_im1 = self.flux_function(u.copy_with_data(ur_im1), axis)
 
-        return lefts, rights
+        ul_star_ip1 = ul_ip1 + 0.5 * (dt / delta) * (FL_ip1 - FR_ip1)
+        ur_star_i = ur_i + 0.5 * (dt / delta) * (FL_i - FR_i)
+        ul_star_i = ul_i + 0.5 * (dt / delta) * (FL_i - FR_i)
+        ur_star_im1 = ur_im1 + 0.5 * (dt / delta) * (FL_im1 - FR_im1)
+
+        Ul_right_interface = u.copy_with_data(ur_star_i)
+        Ur_right_interface = u.copy_with_data(ul_star_ip1)
+
+        Ul_left_interface = u.copy_with_data(ur_star_im1)
+        Ur_left_interface = u.copy_with_data(ul_star_i)
+
+        return (Ul_left_interface, Ur_left_interface), (
+            Ul_right_interface,
+            Ur_right_interface,
+        )
 
     def hll_directional_fluxes(self, u, axis):
         uplus1 = u.get_neighbour_state(axis, 1)
         uminus1 = u.get_neighbour_state(axis, -1)
-        #lefts, rights = self.MUSCL_Hancock_reconstruction(uminus, u, uplus, axis)``
+        (ULl, ULr), (URl, URr) = self.MUSCL_Hancock_reconstruction(
+            uminus1, u, uplus1, axis
+        )
 
         # right interface flux calculation
-        Sl, Sr = self.wave_speeds(u, uplus1, axis)
-        right_interface_flux = self.hll_flux(Sl, Sr, u, uplus1, axis)
-        
-        #left interface flux calculation
-        Sl, Sr = self.wave_speeds(u, uplus1, axis)
-        left_interface_flux = self.hll_flux(Sl, Sr, uminus1, u, axis)
+        # Sl, Sr = self.wave_speeds(u, uplus1, axis)
+        # right_interface_flux = self.hll_flux(Sl, Sr, u, uplus1, axis)
+        Sl, Sr = self.wave_speeds(URl, URr, axis)
+        right_interface_flux = self.hll_flux(Sl, Sr, URl, URr, axis)
+
+        # left interface flux calculation
+        # Sl, Sr = self.wave_speeds(uminus1, u, axis)
+        # left_interface_flux = self.hll_flux(Sl, Sr, uminus1, u, axis)
+        Sl, Sr = self.wave_speeds(ULl, ULr, axis)
+        left_interface_flux = self.hll_flux(Sl, Sr, ULl, ULr, axis)
 
         return right_interface_flux, left_interface_flux
 
@@ -260,10 +285,8 @@ class LaxWendroffFluxer(FluxCalculator):
                 (u1 + u2) - dt * (mid_flux - minus_flux) / cell_sizes[i]
             )
 
-            uplus_star = uplus.copy()
-            uplus_star.set_centroid(intermediate_plus)
-            uminus_star = uminus.copy()
-            uminus_star.set_centroid(intermediate_minus)
+            uplus_star = uplus.copy_with_data(intermediate_plus)
+            uminus_star = uminus.copy_with_data(intermediate_minus)
 
             plus_flux = self.flux_function(uplus_star, i)
             minus_flux = self.flux_function(uminus_star, i)

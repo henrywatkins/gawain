@@ -8,7 +8,7 @@ from gawain.main import run_gawain
 run_name = "mhd_rotor"
 output_dir = "runs"
 
-cfl = 0.25
+cfl = 0.8
 with_mhd = True
 
 t_max = 0.15
@@ -19,7 +19,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 128, 128, 1
+nx, ny, nz = 256, 256, 1
 
 mesh_shape = (nx, ny, nz)
 
@@ -38,46 +38,52 @@ X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
 adiabatic_idx = 1.4
 
-R = np.sqrt((X - 0.5) ** 2 + (Y - 0.5) ** 2)
-R0 = 0.1
-R1 = 0.115
-FR = (R1 - R) / (R - R0)
+# Parameters
+r0 = 0.1
+r1 = 0.115
+u0 = 2.0
 
-U0 = 2
+# Centered coordinates
+xc, yc = 0.5, 0.5
+dx = X - xc
+dy = Y - yc
+r = np.sqrt(dx**2 + dy**2)
 
+# Transition function f(r)
+f = np.zeros_like(r)
+mask = (r > r0) & (r < r1)
+f[mask] = (r1 - r[mask]) / (r1 - r0)
+f[r <= r0] = 1.0
+f[r >= r1] = 0.0
 
-rho_mid_vals = 1 + 9 * FR
-vx_in_vals = -FR * U0 * (Y - 0.5) / R0
-vx_mid_vals = -FR * U0 * (Y - 0.5) / R
-vy_in_vals = FR * U0 * (X - 0.5) / R0
-vy_mid_vals = FR * U0 * (X - 0.5) / R
+# Density
+rho = np.ones_like(r)
+rho[r <= r0] = 10.0
+rho[mask] = 1.0 + 9.0 * f[mask]
 
-inner_mask = np.where(R <= R0)
-middle_mask = np.where(np.logical_and(R > R0, R < R1))
+# Velocities
+u = np.zeros_like(r)
+v = np.zeros_like(r)
 
-rho = np.ones(mesh_shape)
-rho[inner_mask] = 10.0
-rho[middle_mask] = rho_mid_vals[middle_mask]
+# Inner rotor
+mask_inner = r <= r0
+u[mask_inner] = -f[mask_inner] * u0 * dy[mask_inner] / r0
+v[mask_inner] = f[mask_inner] * u0 * dx[mask_inner] / r0
 
-vx = np.zeros(mesh_shape)
-vx[inner_mask] = vx_in_vals[inner_mask]
-vx[middle_mask] = vx_mid_vals[middle_mask]
+# Transition region
+u[mask] = -f[mask] * u0 * dy[mask] / r[mask]
+v[mask] = f[mask] * u0 * dx[mask] / r[mask]
 
-vy = np.zeros(mesh_shape)
-vy[inner_mask] = vy_in_vals[inner_mask]
-vy[middle_mask] = vy_mid_vals[middle_mask]
+# Pressure and B fields
+pressure = np.ones_like(r)
+bx = np.full_like(r, 5.0 / np.sqrt(4.0 * np.pi))
+by = np.zeros_like(r)
+bz = np.zeros_like(r)
+w = np.zeros_like(r)
 
-vz = np.zeros(mesh_shape)
-
-mx = rho * vx
-my = rho * vy
-mz = rho * vz
-
-bx = 5 * np.ones(mesh_shape) / np.sqrt(4 * PI)
-by = np.zeros(mesh_shape)
-bz = np.zeros(mesh_shape)
-
-pressure = np.ones(mesh_shape)
+mx = rho * u
+my = rho * v
+mz = rho * w
 
 mag_pressure = 0.5 * (bx**2 + by**2 + bz**2)
 
@@ -90,6 +96,13 @@ e = (
 
 initial_condition = np.array([rho, mx, my, mz, e, bx, by, bz])
 
+import matplotlib.pyplot as plt
+
+plt.imshow(rho[:, :, 0], cmap="viridis", origin="lower")
+plt.colorbar()
+plt.title("Density")
+plt.savefig("density_initial_condition.png")
+
 ############## BOUNDARY CONDITION ######################
 # available types: periodic, fixed
 boundary_conditions = ["periodic", "periodic", "periodic"]
@@ -100,6 +113,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,

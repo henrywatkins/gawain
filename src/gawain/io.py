@@ -9,13 +9,14 @@ basic reading and plotting class to visualize the results.
 import json
 import os
 
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import h5py
 
 import gawain.fluxes as fluxes
 import gawain.integrators as integrator
 import gawain.numerics as nu
+
 
 class HDFOutput:
     """HDF5 Output utilities class
@@ -43,11 +44,11 @@ class HDFOutput:
         self.save_dir = str(Parameters.output_dir) + "/" + str(Parameters.run_name)
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
-        
+
         # Create HDF5 file
         hdf5_filename = self.save_dir + "/simulation_data.h5"
-        self.hdf5_file = h5py.File(hdf5_filename, 'w')
-        
+        self.hdf5_file = h5py.File(hdf5_filename, "w")
+
         # Store configuration and metadata
         config_group = self.hdf5_file.create_group("config")
         for key, value in Parameters.config.items():
@@ -55,33 +56,34 @@ class HDFOutput:
                 config_group.attrs[key] = value
             elif isinstance(value, list):
                 config_group.attrs[key] = value
-        
+
         # Store initial conditions and mesh
-        self.hdf5_file.create_dataset("initial_condition", data=Parameters.initial_condition)
+        self.hdf5_file.create_dataset(
+            "initial_condition", data=Parameters.initial_condition
+        )
         self.hdf5_file.create_dataset("X", data=Parameters.mesh_grid[0])
         self.hdf5_file.create_dataset("Y", data=Parameters.mesh_grid[1])
         self.hdf5_file.create_dataset("Z", data=Parameters.mesh_grid[2])
-        
+
         if Parameters.source_data is not None:
-            self.hdf5_file.create_dataset("source_function_field", data=Parameters.source_data)
-        
+            self.hdf5_file.create_dataset(
+                "source_function_field", data=Parameters.source_data
+            )
+
         # Create datasets for time series data with unlimited time dimension
         data_shape = SolutionVector.data.shape
         maxshape = (None,) + data_shape
         self.solution_dataset = self.hdf5_file.create_dataset(
-            "solutions", 
-            shape=(1,) + data_shape, 
-            maxshape=maxshape, 
-            dtype=SolutionVector.data.dtype
+            "solutions",
+            shape=(1,) + data_shape,
+            maxshape=maxshape,
+            dtype=SolutionVector.data.dtype,
         )
-        
+
         self.times_dataset = self.hdf5_file.create_dataset(
-            "times", 
-            shape=(1,), 
-            maxshape=(None,), 
-            dtype=float
+            "times", shape=(1,), maxshape=(None,), dtype=float
         )
-        
+
         # Store initial data
         self.solution_dataset[0] = SolutionVector.data
         self.times_dataset[0] = 0.0
@@ -98,15 +100,15 @@ class HDFOutput:
             the current simulation time
         """
         self.dump_no += 1
-        
+
         # Resize datasets to accommodate new data
         self.solution_dataset.resize((self.dump_no + 1,) + SolutionVector.data.shape)
         self.times_dataset.resize((self.dump_no + 1,))
-        
+
         # Append new data
         self.solution_dataset[self.dump_no] = SolutionVector.data
         self.times_dataset[self.dump_no] = time if time is not None else self.dump_no
-        
+
         self.hdf5_file.flush()
 
     def close(self):
@@ -196,7 +198,9 @@ class Parameters:
         self.t_max = config["t_max"]
         self.n_outputs = config["n_dumps"]
         self.adi_idx = config["adi_idx"]
-        self.initial_condition = config["initial_condition"]#.astype(np.float32)  # make this a f32 numpy array
+        self.initial_condition = config[
+            "initial_condition"
+        ]  # .astype(np.float32)  # make this a f32 numpy array
         self.source_data = config["source"] if "source" in config.keys() else None
         self.gravity_field = config["gravity"] if "gravity" in config.keys() else None
         self.boundary_type = config["boundary_type"]
@@ -339,9 +343,9 @@ class Reader:
 
         self.data = {variable: [] for variable in self.variables}
         self.grid = (
-            np.load(self.file_path + "/X.npy"),
-            np.load(self.file_path + "/Y.npy"),
-            np.load(self.file_path + "/Z.npy"),
+            np.squeeze(np.load(self.file_path + "/X.npy")),
+            np.squeeze(np.load(self.file_path + "/Y.npy")),
+            np.squeeze(np.load(self.file_path + "/Z.npy")),
         )
         self.times = np.load(self.file_path + "/T.npy")
 
@@ -393,7 +397,6 @@ class Reader:
 
         # 2D runs
         elif self.data_dim == 1:
-
             new_shape = tuple(filter(lambda x: x > 1, to_plot.shape))
             to_plot = to_plot.reshape(new_shape)
 

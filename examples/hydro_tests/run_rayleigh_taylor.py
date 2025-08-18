@@ -24,7 +24,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 100, 300, 1
+nx, ny, nz = 50, 150, 1
 
 mesh_shape = (nx, ny, nz)
 
@@ -73,6 +73,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,
