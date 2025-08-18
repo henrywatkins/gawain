@@ -4,6 +4,7 @@ import numpy as np
 
 from gawain.main import run_gawain
 
+# Woodward colella blast wave problem
 run_name = "blast_wave"
 output_dir = "."
 
@@ -20,7 +21,7 @@ fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 512, 1, 1
+nx, ny, nz = 128, 1, 1
 
 mesh_shape = (nx, ny, nz)
 

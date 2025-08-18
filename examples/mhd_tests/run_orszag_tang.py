@@ -36,7 +36,7 @@ X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 5 / 3
+adiabatic_idx = 5. / 3.
 
 rho = np.ones(mesh_shape)
 
@@ -71,6 +71,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,

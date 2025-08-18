@@ -94,9 +94,7 @@ class Parameters:
         self.t_max = config["t_max"]
         self.n_outputs = config["n_dumps"]
         self.adi_idx = config["adi_idx"]
-        self.initial_condition = config["initial_condition"].astype(
-            np.float32
-        )  # make this a f32 numpy array
+        self.initial_condition = config["initial_condition"]#.astype(np.float32)  # make this a f32 numpy array
         self.source_data = config["source"] if "source" in config.keys() else None
         self.gravity_field = config["gravity"] if "gravity" in config.keys() else None
         self.boundary_type = config["boundary_type"]
@@ -138,9 +136,9 @@ class Parameters:
                 return fluxes.FluxCalculator()
             elif self.fluxer_type == "hll":
                 return fluxes.HLLFluxer()
-            elif self.fluxer == "lax-wendroff":
+            elif self.fluxer_type == "lax-wendroff":
                 return fluxes.LaxWendroffFluxer()
-            elif self.fluxer == "lax-friedrichs":
+            elif self.fluxer_type == "lax-friedrichs":
                 return fluxes.LaxFriedrichsFluxer()
         else:
             raise KeyError(

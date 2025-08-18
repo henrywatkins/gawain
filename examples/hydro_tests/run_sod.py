@@ -7,7 +7,7 @@ from gawain.main import run_gawain
 run_name = "sod_shock_tube"
 output_dir = "runs"
 
-cfl = 0.5
+cfl = 0.25
 with_mhd = False
 with_thermal_conductivity = False
 with_resistivity = False

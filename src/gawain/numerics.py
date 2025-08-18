@@ -150,13 +150,16 @@ class SolutionVector:
         new_vector.timestep = self.timestep
         new_vector.boundsetter = self.boundsetter
         return new_vector
+    
+    def eigen_speeds(self,axis):
+        """Return the eigen speeds along a given axis"""
+        vel = self.vel(axis)
+        cs = self.sound_speed()
+        return vel - cs, vel + cs
 
     def calculate_min_max_wave_speeds(self, axis):
         """Return the the minimum and maximum wave speeds along a given axis"""
-        vel = self.vel(axis)
-        cs = self.sound_speed()
-        lambda1 = vel - cs
-        lambda2 = vel + cs
+        lambda1, lambda2 = self.eigen_speeds(axis)
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
     def calculate_timestep(self):
@@ -276,6 +279,7 @@ class SolutionVector:
         """Return the thermal pressure field data"""
         thermal_en = self.energy() - 0.5 * self.momTotalSqr() / self.dens()
         pressure = (self.adi_idx - 1.0) * thermal_en
+        pressure = np.maximum(pressure, 0.0)
         return pressure
 
     def sound_speed(self):
@@ -354,13 +358,11 @@ class MHDSolutionVector(SolutionVector):
         quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vax2 * vs2)
         return np.sqrt(0.5 * quad)
 
-    def calculate_min_max_wave_speeds(self, axis):
-        """Return the the minimum and maximum wave speeds in the specified direction"""
+    def eigen_speeds(self, axis):
         vel = self.vel(axis)
         cf = self.fast_magnetosonic_speed(axis)
-        lambda1 = vel - cf
-        lambda2 = vel + cf
-        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+        return vel - cf, vel + cf
+
 
 class BoundarySetter:
     """Boundary value setting object
