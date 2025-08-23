@@ -8,7 +8,7 @@ basic reading and plotting class to visualize the results.
 
 import json
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import h5py
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ import gawain.integrators as integrator
 import gawain.numerics as nu
 
 if TYPE_CHECKING:
-    from .numerics import SolutionVector, MHDSolutionVector
+    from .numerics import MHDSolutionVector, SolutionVector
 
 
 class Output:
@@ -35,7 +35,11 @@ class Output:
         the HDF5 file object for data storage
     """
 
-    def __init__(self, Parameters: "Parameters", SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
+    def __init__(
+        self,
+        Parameters: "Parameters",
+        SolutionVector: "Union[SolutionVector, MHDSolutionVector]",
+    ) -> None:
         """
         Parameters
         ----------
@@ -103,7 +107,11 @@ class Output:
         self.timestamps_dataset[0] = 0.0
         self.hdf5_file.flush()
 
-    def dump(self, SolutionVector: "Union[SolutionVector, MHDSolutionVector]", time: Optional[float] = None) -> None:
+    def dump(
+        self,
+        SolutionVector: "Union[SolutionVector, MHDSolutionVector]",
+        time: Optional[float] = None,
+    ) -> None:
         """Append the solution to HDF5 file
 
         Parameters:
@@ -148,7 +156,11 @@ class NPYOutput:
         the path to the save folder where all output data is saved
     """
 
-    def __init__(self, Parameters: "Parameters", SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
+    def __init__(
+        self,
+        Parameters: "Parameters",
+        SolutionVector: "Union[SolutionVector, MHDSolutionVector]",
+    ) -> None:
         """
         Parameters
         ----------
@@ -271,7 +283,14 @@ class Parameters:
                 )
             )
 
-    def create_fluxer(self) -> Union[fluxes.FluxCalculator, fluxes.HLLFluxer, fluxes.LaxWendroffFluxer, fluxes.LaxFriedrichsFluxer]:
+    def create_fluxer(
+        self,
+    ) -> Union[
+        fluxes.FluxCalculator,
+        fluxes.HLLFluxer,
+        fluxes.LaxWendroffFluxer,
+        fluxes.LaxFriedrichsFluxer,
+    ]:
         """create a flux calculation object"""
         if self.fluxer_type in self.available_fluxers:
             if self.fluxer_type == "base":
@@ -373,7 +392,14 @@ class Reader:
         for j, variable in enumerate(self.run_config["variables"]):
             self.data[variable] = solutions[:, j]
 
-    def plot(self, variable: str, timesteps: List[int] = [0], save_as: Optional[str] = None, vmax: float = 1, vmin: float = 0) -> None:
+    def plot(
+        self,
+        variable: str,
+        timesteps: List[int] = [0],
+        save_as: Optional[str] = None,
+        vmax: float = 1,
+        vmin: float = 0,
+    ) -> None:
         """Plot the output for a particular variable
 
         Parameters

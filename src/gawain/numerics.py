@@ -4,12 +4,15 @@ These numerical utilities include the Clock
 time-keeping class and the base solution vector
 classes for both hydro and mhd.
 """
+
 from __future__ import annotations
+
 import time
 from typing import Any, List, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
+
 
 class Clock:
     """Timing utility for simulations
@@ -358,20 +361,22 @@ class BoundarySetter:
         the values at the boundaries if fixed
     """
 
-    def __init__(self, boundary_types: List[str], initial_boundary_values: np.ndarray) -> None:
+    def __init__(
+        self, boundary_types: List[str], initial_boundary_values: np.ndarray
+    ) -> None:
         self.boundary_types = boundary_types
         self.initial_values = initial_boundary_values
-        
+
         # Pre-compute shift indices for all axis and direction combinations
         self._shift_indices = {}
         shape = initial_boundary_values.shape
-        
+
         # Pre-compute for all 3 axes and both directions (+1 and -1)
         for axis in range(3):  # x, y, z axes
             array_axis = axis + 1  # Skip the variable dimension
             axis_size = shape[array_axis]
             indices = np.arange(axis_size)
-            
+
             for direction in [-1, 1]:  # Both shift directions
                 key = (array_axis, direction, axis_size)
                 self._shift_indices[key] = (indices - direction) % axis_size
@@ -401,7 +406,9 @@ class BoundarySetter:
 
         return stencil_arm
 
-    def get_boundary_indices(self, axis: int, direction: int, shape: Tuple[int, ...]) -> Tuple[np.ndarray, ...]:
+    def get_boundary_indices(
+        self, axis: int, direction: int, shape: Tuple[int, ...]
+    ) -> Tuple[np.ndarray, ...]:
         variables_index_set = np.arange(shape[0])
         x_index_set = np.arange(shape[1])
         y_index_set = np.arange(shape[2])
@@ -419,7 +426,9 @@ class BoundarySetter:
 
         return np.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
 
-    def velocity_boundary_indices(self, axis: int, direction: int, shape: Tuple[int, ...]) -> Tuple[np.ndarray, ...]:
+    def velocity_boundary_indices(
+        self, axis: int, direction: int, shape: Tuple[int, ...]
+    ) -> Tuple[np.ndarray, ...]:
         variables_index_set = np.arange(shape[0])
         x_index_set = np.arange(shape[1])
         y_index_set = np.arange(shape[2])
@@ -455,7 +464,9 @@ class GravitySource:
     def __init__(self, gravity_field: np.ndarray) -> None:
         self.field = gravity_field
 
-    def calculate_gravity_source(self, solvec: Union[SolutionVector, MHDSolutionVector]) -> np.ndarray:
+    def calculate_gravity_source(
+        self, solvec: Union[SolutionVector, MHDSolutionVector]
+    ) -> np.ndarray:
         """Calculates the gravity field source terms
 
         Parameters

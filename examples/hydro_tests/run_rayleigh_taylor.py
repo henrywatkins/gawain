@@ -9,7 +9,7 @@ from scipy.constants import pi as PI
 
 from gawain.main import run_gawain
 
-run_name = "rayleigh_taylor"
+run_name = "rayleigh_taylor_numba"
 output_dir = "runs"
 cfl = 0.9
 
