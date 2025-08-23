@@ -214,33 +214,11 @@ class SolutionVector:
         index = self.variable_names.index(variable_name)
         return self.data[index]
 
-    def shift(self, axis: int, direction: int) -> SolutionVector:
-        """Shift all the solution data and apply boundary conditions
-
-        This operation provides the means to access the positions of the
-        numerical stencil in a vectorized manner. It makes a copy of the
-        solution vector with the data shifted to required stencil position,
-        accounting for boundary conditions.
-
-        Parameters
-        ----------
-        axis : int
-            the axis to shift (x:0, y:1, z:2)
-        direction : int
-            the direction to shift in (+1 or -1)
-
-        Returns
-        -------
-        new_vector : SolutionVector
-            the shifted solution vector for every cell in the mesh
-        """
+    def get_neighbour_state(self, axis: int, direction: int) -> SolutionVector:
+        """Get the neighbour state for the current solution vector"""
         rolled = self.boundsetter.set_stencil(self.data, axis, direction)
         new_vector = self.copy_with_data(rolled)
         return new_vector
-
-    def get_neighbour_state(self, axis: int, direction: int) -> SolutionVector:
-        """Get the neighbour state for the current solution vector"""
-        return self.shift(axis, direction)
 
     def update(self, array: np.ndarray) -> None:
         """Update the solution vector data with an array of values
@@ -383,9 +361,25 @@ class BoundarySetter:
     def __init__(self, boundary_types: List[str], initial_boundary_values: np.ndarray) -> None:
         self.boundary_types = boundary_types
         self.initial_values = initial_boundary_values
+        
+        # Pre-compute shift indices for all axis and direction combinations
+        self._shift_indices = {}
+        shape = initial_boundary_values.shape
+        
+        # Pre-compute for all 3 axes and both directions (+1 and -1)
+        for axis in range(3):  # x, y, z axes
+            array_axis = axis + 1  # Skip the variable dimension
+            axis_size = shape[array_axis]
+            indices = np.arange(axis_size)
+            
+            for direction in [-1, 1]:  # Both shift directions
+                key = (array_axis, direction, axis_size)
+                self._shift_indices[key] = (indices - direction) % axis_size
 
     def set_stencil(self, array: np.ndarray, axis: int, direction: int) -> np.ndarray:
-        stencil_arm = np.roll(array, direction, axis=axis + 1)
+        # Use pre-computed indices
+        key = (axis + 1, direction, array.shape[axis + 1])
+        stencil_arm = np.take(array, self._shift_indices[key], axis=axis + 1)
         boundary_type = self.boundary_types[axis]
         shape = array.shape
 

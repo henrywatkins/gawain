@@ -11,7 +11,7 @@ from gawain.main import run_gawain
 
 run_name = "rayleigh_taylor"
 output_dir = "runs"
-cfl = 0.5
+cfl = 0.9
 
 with_mhd = False
 
