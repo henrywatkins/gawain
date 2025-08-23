@@ -34,7 +34,6 @@ def run_gawain(config):
     solution.set_state(params)
     integrator = params.create_integrator()
     params.print_params()
-    # output = io.NPYOutput(params, solution)
     output = io.Output(params, solution)
     clock = nu.Clock(params)
 

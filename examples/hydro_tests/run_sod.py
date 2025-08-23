@@ -16,7 +16,7 @@ t_max = 0.25
 
 integrator = "euler"
 # "base", "lax-wendroff", "lax-friedrichs", "vanleer", "hll"
-fluxer = "lax-wendroff"
+fluxer = "hll"
 
 ################ MESH #####################
 
