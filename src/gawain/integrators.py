@@ -6,7 +6,13 @@ this means taking the fluxes of the variables in and out
 of a cell and updating the cell accordingly.
 """
 
+from typing import Optional, Union, TYPE_CHECKING
+
 import numpy as np
+
+if TYPE_CHECKING:
+    from .numerics import SolutionVector, MHDSolutionVector, GravitySource
+    from .io import Parameters
 
 
 class Integrator:
@@ -25,13 +31,13 @@ class Integrator:
         contains informaiton about gravitational field
     """
 
-    def __init__(self, parameters):
+    def __init__(self, parameters: "Parameters") -> None:
         self.fluxer = parameters.create_fluxer()
         self.fluxer.set_flux_function(parameters.with_mhd)
         self.source = parameters.create_source()
         self.gravity = parameters.create_gravity()
 
-    def integrate(self, solution_vector):
+    def integrate(self, solution_vector: "Union[SolutionVector, MHDSolutionVector]") -> "Union[SolutionVector, MHDSolutionVector]":
         """Integrate the solution at this timestep
 
         Parameters

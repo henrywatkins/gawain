@@ -8,6 +8,7 @@ basic reading and plotting class to visualize the results.
 
 import json
 import os
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import h5py
 import matplotlib.pyplot as plt
@@ -16,6 +17,9 @@ import numpy as np
 import gawain.fluxes as fluxes
 import gawain.integrators as integrator
 import gawain.numerics as nu
+
+if TYPE_CHECKING:
+    from .numerics import SolutionVector, MHDSolutionVector
 
 
 class Output:
@@ -31,7 +35,7 @@ class Output:
         the HDF5 file object for data storage
     """
 
-    def __init__(self, Parameters, SolutionVector):
+    def __init__(self, Parameters: "Parameters", SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
         """
         Parameters
         ----------
@@ -99,7 +103,7 @@ class Output:
         self.timestamps_dataset[0] = 0.0
         self.hdf5_file.flush()
 
-    def dump(self, SolutionVector, time=None):
+    def dump(self, SolutionVector: "Union[SolutionVector, MHDSolutionVector]", time: Optional[float] = None) -> None:
         """Append the solution to HDF5 file
 
         Parameters:
@@ -123,12 +127,12 @@ class Output:
 
         self.hdf5_file.flush()
 
-    def close(self):
+    def close(self) -> None:
         """Close the HDF5 file"""
         if self.hdf5_file:
             self.hdf5_file.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Destructor to ensure file is closed"""
         self.close()
 
@@ -144,7 +148,7 @@ class NPYOutput:
         the path to the save folder where all output data is saved
     """
 
-    def __init__(self, Parameters, SolutionVector):
+    def __init__(self, Parameters: "Parameters", SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
         """
         Parameters
         ----------
@@ -171,7 +175,7 @@ class NPYOutput:
                 self.save_dir + "/source_function_field.npy", Parameters.source_data
             )
 
-    def dump(self, SolutionVector):
+    def dump(self, SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
         """Output the solution to file
 
         Parameters:
@@ -191,7 +195,7 @@ class Parameters:
     This includes mesh parameters, method, initial and boundary conditions.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
         Parameters
         ----------
@@ -256,7 +260,7 @@ class Parameters:
         config.pop("mesh_grid", None)
         self.config = config
 
-    def create_integrator(self):
+    def create_integrator(self) -> integrator.Integrator:
         """create an integrator object"""
         if self.integrator_type in self.available_integrators:
             return integrator.Integrator(self)
@@ -267,7 +271,7 @@ class Parameters:
                 )
             )
 
-    def create_fluxer(self):
+    def create_fluxer(self) -> Union[fluxes.FluxCalculator, fluxes.HLLFluxer, fluxes.LaxWendroffFluxer, fluxes.LaxFriedrichsFluxer]:
         """create a flux calculation object"""
         if self.fluxer_type in self.available_fluxers:
             if self.fluxer_type == "base":
@@ -285,7 +289,7 @@ class Parameters:
                 )
             )
 
-    def create_source(self):
+    def create_source(self) -> Optional[np.ndarray]:
         """create a source object"""
         if self.source_data is not None:
             if self.source_data.shape == self.initial_condition.shape:
@@ -296,7 +300,7 @@ class Parameters:
                 )
         return None
 
-    def create_gravity(self):
+    def create_gravity(self) -> Optional[nu.GravitySource]:
         """create a gravity source object"""
         if self.gravity_field is not None:
             if self.gravity_field.shape == (
@@ -312,7 +316,7 @@ class Parameters:
                 )
         return None
 
-    def print_params(self):
+    def print_params(self) -> None:
         print("run name: ", self.run_name)
         print("clf condition =", self.cfl)
         print("nx, ny, nz =", self.mesh_shape)
@@ -339,7 +343,7 @@ class Reader:
         dictionary containing raw simulation data for each variable
     """
 
-    def __init__(self, hdf5_file_path):
+    def __init__(self, hdf5_file_path: str) -> None:
         """
         Parameters
         ----------
@@ -369,7 +373,7 @@ class Reader:
         for j, variable in enumerate(self.run_config["variables"]):
             self.data[variable] = solutions[:, j]
 
-    def plot(self, variable, timesteps=[0], save_as=None, vmax=1, vmin=0):
+    def plot(self, variable: str, timesteps: List[int] = [0], save_as: Optional[str] = None, vmax: float = 1, vmin: float = 0) -> None:
         """Plot the output for a particular variable
 
         Parameters
@@ -434,15 +438,15 @@ class Reader:
         else:
             print("plot() only supports visualisation of 1D and 2D data")
 
-    def get_data(self, variable):
+    def get_data(self, variable: str) -> np.ndarray:
         """Get the raw data for a particular variable"""
         return self.data[variable]
 
-    def close(self):
+    def close(self) -> None:
         """Close the HDF5 file"""
         if self.hdf5_file:
             self.hdf5_file.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Destructor to ensure file is closed"""
         self.close()

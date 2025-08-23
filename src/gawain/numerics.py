@@ -4,12 +4,12 @@ These numerical utilities include the Clock
 time-keeping class and the base solution vector
 classes for both hydro and mhd.
 """
-
+from __future__ import annotations
 import time
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
-
 
 class Clock:
     """Timing utility for simulations
@@ -26,7 +26,7 @@ class Clock:
         the next time point at which output will be dumped
     """
 
-    def __init__(self, Parameters):
+    def __init__(self, Parameters: Any) -> None:
         """
         Parameters
         ----------
@@ -43,7 +43,7 @@ class Clock:
         )  # , bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')
         self.wallclock_start = time.process_time()
 
-    def is_end(self):
+    def is_end(self) -> bool:
         """Check if simulation has reached the end time"""
 
         if self.current_time < self.end_time:
@@ -52,12 +52,12 @@ class Clock:
             self.bar.close()
             return True
 
-    def tick(self, dt):
+    def tick(self, dt: float) -> None:
         """update the current time"""
         self.bar.update(dt)
         self.current_time += dt
 
-    def is_output(self):
+    def is_output(self) -> bool:
         """check if output should be dumped at this timestep"""
         if self.current_time >= self.next_output_time:
             self.next_output_time += self.output_spacing
@@ -66,12 +66,12 @@ class Clock:
         else:
             return False
 
-    def duration(self):
+    def duration(self) -> float:
         """calculate the total duration of the simulation in seconds"""
         wallclock_end = time.process_time()
         return wallclock_end - self.wallclock_start
 
-    def dump_times(self, save_loc):
+    def dump_times(self, save_loc: str) -> None:
         np.save(save_loc + "/T.npy", np.array(self.output_times))
 
 
@@ -101,7 +101,7 @@ class SolutionVector:
         the names of the variables contained in the solution vector, in order of their vecotr position
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = None
         self.boundary_type = None
         self.boundary_value = None
@@ -119,7 +119,7 @@ class SolutionVector:
             "energy",
         ]
 
-    def set_state(self, Parameters):
+    def set_state(self, Parameters: Any) -> None:
         """Set the initial state of the solution vector
 
         Parameters
@@ -132,16 +132,16 @@ class SolutionVector:
         self.dx, self.dy, self.dz = Parameters.cell_sizes
         self.cell_sizes = Parameters.cell_sizes
         self.adi_idx = Parameters.adi_idx
-        self.set_centroid(Parameters.initial_condition)
+        self.data = Parameters.initial_condition
         self.cfl = Parameters.cfl
         self.boundsetter = BoundarySetter(
             Parameters.boundary_type, Parameters.initial_condition
         )
 
-    def copy(self):
+    def copy(self) -> SolutionVector:
         """Return a copy of the solution vector"""
         new_vector = SolutionVector()
-        new_vector.data = self.data
+        new_vector.data = None
         new_vector.boundary_type = self.boundary_type
         new_vector.boundary_value = self.boundary_value
         new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
@@ -151,18 +151,18 @@ class SolutionVector:
         new_vector.boundsetter = self.boundsetter
         return new_vector
 
-    def eigen_speeds(self, axis):
+    def eigen_speeds(self, axis: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return the eigen speeds along a given axis"""
         vel = self.vel(axis)
         cs = self.sound_speed()
         return vel - cs, vel + cs
 
-    def calculate_min_max_wave_speeds(self, axis):
+    def calculate_min_max_wave_speeds(self, axis: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return the the minimum and maximum wave speeds along a given axis"""
         lambda1, lambda2 = self.eigen_speeds(axis)
         return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
 
-    def calculate_timestep(self):
+    def calculate_timestep(self) -> float:
         """Calculate the timestep size, using the wave speeds and CFL value
 
         Returns
@@ -182,17 +182,13 @@ class SolutionVector:
         self.timestep = min(timestep_x, timestep_y, timestep_z)
         return max(self.timestep, 1e-8)
 
-    def set_centroid(self, array):
-        """Set the data for each cell in the mesh"""
-        self.data = array
-
-    def copy_with_data(self, array):
+    def copy_with_data(self, array: np.ndarray) -> SolutionVector:
         """Return a copy of the solution vector with new data"""
         new_vector = self.copy()
         new_vector.data = array
         return new_vector
 
-    def centroid(self):
+    def centroid(self) -> np.ndarray:
         """Return the solution vector data for each mesh cell
 
         Returns
@@ -202,7 +198,7 @@ class SolutionVector:
         """
         return self.data
 
-    def get_variable(self, variable_name):
+    def get_variable(self, variable_name: str) -> np.ndarray:
         """Get the solution data specific to a variable
 
         Parameters
@@ -218,7 +214,7 @@ class SolutionVector:
         index = self.variable_names.index(variable_name)
         return self.data[index]
 
-    def shift(self, axis, direction):
+    def shift(self, axis: int, direction: int) -> SolutionVector:
         """Shift all the solution data and apply boundary conditions
 
         This operation provides the means to access the positions of the
@@ -239,15 +235,14 @@ class SolutionVector:
             the shifted solution vector for every cell in the mesh
         """
         rolled = self.boundsetter.set_stencil(self.data, axis, direction)
-        new_vector = self.copy()
-        new_vector.set_centroid(rolled)
+        new_vector = self.copy_with_data(rolled)
         return new_vector
 
-    def get_neighbour_state(self, axis, direction):
+    def get_neighbour_state(self, axis: int, direction: int) -> SolutionVector:
         """Get the neighbour state for the current solution vector"""
         return self.shift(axis, direction)
 
-    def update(self, array):
+    def update(self, array: np.ndarray) -> None:
         """Update the solution vector data with an array of values
 
         u' = u + delta t * array
@@ -260,34 +255,34 @@ class SolutionVector:
 
         self.data += self.timestep * array
 
-    def dens(self):
+    def dens(self) -> np.ndarray:
         """Return the density field data"""
         return self.data[0]
 
-    def mom(self, axis):
+    def mom(self, axis: int) -> np.ndarray:
         """Return the momentum field data for a given axis"""
         return self.data[axis + 1]
 
-    def vel(self, axis):
+    def vel(self, axis: int) -> np.ndarray:
         """Return the velocity field data for a given axis"""
         return self.data[axis + 1] / self.data[0]
 
-    def momTotalSqr(self):
+    def momTotalSqr(self) -> np.ndarray:
         """Return the total momentum squared field data |M|**2"""
         return self.data[1] ** 2 + self.data[2] ** 2 + self.data[3] ** 2
 
-    def energy(self):
+    def energy(self) -> np.ndarray:
         """Return the total energy field data"""
         return self.data[4]
 
-    def pressure(self):
+    def pressure(self) -> np.ndarray:
         """Return the thermal pressure field data"""
         thermal_en = self.energy() - 0.5 * self.momTotalSqr() / self.dens()
         pressure = (self.adi_idx - 1.0) * thermal_en
         pressure = np.maximum(pressure, 1e-8)
         return pressure
 
-    def sound_speed(self):
+    def sound_speed(self) -> np.ndarray:
         """Return the sound speed for every mesh cell"""
         return np.sqrt(self.adi_idx * self.pressure() / self.dens())
 
@@ -299,7 +294,7 @@ class MHDSolutionVector(SolutionVector):
     all variables in the magnetohydrodynamic problem.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(MHDSolutionVector, self).__init__()
         self.variable_names = [
             "density",
@@ -312,10 +307,10 @@ class MHDSolutionVector(SolutionVector):
             "zmag",
         ]
 
-    def copy(self):
+    def copy(self) -> MHDSolutionVector:
         """Return a copy of the solution vector"""
         new_vector = MHDSolutionVector()
-        new_vector.data = self.data
+        new_vector.data = None
         new_vector.boundary_type = self.boundary_type
         new_vector.boundary_value = self.boundary_value
         new_vector.dx, new_vector.dy, new_vector.dz = self.dx, self.dy, self.dz
@@ -325,19 +320,19 @@ class MHDSolutionVector(SolutionVector):
         new_vector.boundsetter = self.boundsetter
         return new_vector
 
-    def mag(self, axis):
+    def mag(self, axis: int) -> np.ndarray:
         """Return the magnetic field data for a given axis"""
         return self.data[axis + 5]
 
-    def magTotalSqr(self):
+    def magTotalSqr(self) -> np.ndarray:
         """Return the total magnetic field squared data |B|**2"""
         return self.data[5] ** 2 + self.data[6] ** 2 + self.data[7] ** 2
 
-    def magnetic_pressure(self):
+    def magnetic_pressure(self) -> np.ndarray:
         """Return the magnetic pressure field data"""
         return self.magTotalSqr() * 0.5
 
-    def pressure(self):
+    def pressure(self) -> np.ndarray:
         """Return the thermal pressure field data"""
         thermal_en = (
             self.energy()
@@ -348,15 +343,15 @@ class MHDSolutionVector(SolutionVector):
         pressure = np.maximum(pressure, 1e-8)
         return pressure
 
-    def total_pressure(self):
+    def total_pressure(self) -> np.ndarray:
         """Return the total pressure, magnetic plus thermal"""
         return self.pressure() + self.magnetic_pressure()
 
-    def alfven_speed(self):
+    def alfven_speed(self) -> np.ndarray:
         """Return the Alfven speed for each mesh cell"""
         return np.sqrt(self.magTotalSqr() / self.dens())
 
-    def fast_magnetosonic_speed(self, axis):
+    def fast_magnetosonic_speed(self, axis: int) -> np.ndarray:
         """Return the fast magnetosonic speed in the specified direction for each mesh cell"""
         va2 = self.alfven_speed() ** 2
         vs2 = self.sound_speed() ** 2
@@ -364,7 +359,7 @@ class MHDSolutionVector(SolutionVector):
         quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vax2 * vs2)
         return np.sqrt(0.5 * quad)
 
-    def eigen_speeds(self, axis):
+    def eigen_speeds(self, axis: int) -> Tuple[np.ndarray, np.ndarray]:
         vel = self.vel(axis)
         cf = self.fast_magnetosonic_speed(axis)
         return vel - cf, vel + cf
@@ -385,11 +380,11 @@ class BoundarySetter:
         the values at the boundaries if fixed
     """
 
-    def __init__(self, boundary_types, initial_boundary_values):
+    def __init__(self, boundary_types: List[str], initial_boundary_values: np.ndarray) -> None:
         self.boundary_types = boundary_types
         self.initial_values = initial_boundary_values
 
-    def set_stencil(self, array, axis, direction):
+    def set_stencil(self, array: np.ndarray, axis: int, direction: int) -> np.ndarray:
         stencil_arm = np.roll(array, direction, axis=axis + 1)
         boundary_type = self.boundary_types[axis]
         shape = array.shape
@@ -412,7 +407,7 @@ class BoundarySetter:
 
         return stencil_arm
 
-    def get_boundary_indices(self, axis, direction, shape):
+    def get_boundary_indices(self, axis: int, direction: int, shape: Tuple[int, ...]) -> Tuple[np.ndarray, ...]:
         variables_index_set = np.arange(shape[0])
         x_index_set = np.arange(shape[1])
         y_index_set = np.arange(shape[2])
@@ -430,7 +425,7 @@ class BoundarySetter:
 
         return np.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
 
-    def velocity_boundary_indices(self, axis, direction, shape):
+    def velocity_boundary_indices(self, axis: int, direction: int, shape: Tuple[int, ...]) -> Tuple[np.ndarray, ...]:
         variables_index_set = np.arange(shape[0])
         x_index_set = np.arange(shape[1])
         y_index_set = np.arange(shape[2])
@@ -463,10 +458,10 @@ class GravitySource:
         the gravitational field mesh data
     """
 
-    def __init__(self, gravity_field):
+    def __init__(self, gravity_field: np.ndarray) -> None:
         self.field = gravity_field
 
-    def calculate_gravity_source(self, solvec):
+    def calculate_gravity_source(self, solvec: Union[SolutionVector, MHDSolutionVector]) -> np.ndarray:
         """Calculates the gravity field source terms
 
         Parameters

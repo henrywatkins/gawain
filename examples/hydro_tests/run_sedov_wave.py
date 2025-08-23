@@ -63,6 +63,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,

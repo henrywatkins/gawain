@@ -6,6 +6,8 @@ in python.
 
 """
 
+from typing import Any, Dict
+
 import gawain.io as io
 import gawain.numerics as nu
 
@@ -22,7 +24,7 @@ Simulation parameters:
 """
 
 
-def run_gawain(config):
+def run_gawain(config: Dict[str, Any]) -> None:
 
     print(PREAMBLE)
 
