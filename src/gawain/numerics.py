@@ -35,9 +35,9 @@ class Clock:
         """
         self.current_time = 0.0
         self.end_time = Parameters.t_max
-        self.next_output_time = 0.0
         self.output_times = [self.current_time]
         self.output_spacing = self.end_time / Parameters.n_outputs
+        self.next_output_time = self.output_spacing
         self.bar = tqdm(
             total=self.end_time + 0.01
         )  # , bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')

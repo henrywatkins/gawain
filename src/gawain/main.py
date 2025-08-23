@@ -34,18 +34,15 @@ def run_gawain(config):
     solution.set_state(params)
     integrator = params.create_integrator()
     params.print_params()
+    # output = io.NPYOutput(params, solution)
     output = io.Output(params, solution)
     clock = nu.Clock(params)
 
     while not clock.is_end():
+        if clock.is_output():
+            output.dump(solution, time=clock.current_time)
         dt = solution.calculate_timestep()
         solution = integrator.integrate(solution)
-
-        if clock.is_output():
-            output.dump(solution)
-
         clock.tick(dt)
-
-    clock.dump_times(output.save_dir)
 
     print(f"\nSimulation Complete, duration: {clock.duration():.2f} seconds")

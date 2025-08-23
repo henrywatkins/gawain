@@ -18,7 +18,7 @@ import gawain.integrators as integrator
 import gawain.numerics as nu
 
 
-class HDFOutput:
+class Output:
     """HDF5 Output utilities class
 
     Tool for outputting data from the simulation to HDF5 format
@@ -41,26 +41,36 @@ class HDFOutput:
             the initial solution vector of the simulation
         """
         self.dump_no = 0
-        self.save_dir = str(Parameters.output_dir) + "/" + str(Parameters.run_name)
-        if not os.path.exists(self.save_dir):
-            os.mkdir(self.save_dir)
-
+        self.save_file = str(Parameters.output_dir) + "/" + str(Parameters.run_name)
+        self.hdf5_file = None
         # Create HDF5 file
-        hdf5_filename = self.save_dir + "/simulation_data.h5"
-        self.hdf5_file = h5py.File(hdf5_filename, "w")
-
+        hdf5_filename = self.save_file + ".h5"
+        if not os.path.exists(hdf5_filename):
+            self.hdf5_file = h5py.File(hdf5_filename, "w")
+        else:
+            raise FileExistsError(
+                f"File {hdf5_filename} already exists. Please choose a different run_name or delete the existing file."
+            )
+        parameters_to_save = {
+            "variables": list,
+            "adi_idx": float,
+            "boundary_type": list,
+            "cfl": float,
+            "fluxer_type": str,
+            "integrator_type": str,
+            "mesh_shape": tuple,
+            "mesh_size": tuple,
+            "n_outputs": int,
+            "run_name": str,
+            "t_max": float,
+            "with_mhd": bool,
+        }
         # Store configuration and metadata
         config_group = self.hdf5_file.create_group("config")
-        for key, value in Parameters.config.items():
-            if isinstance(value, (int, float, str)):
-                config_group.attrs[key] = value
-            elif isinstance(value, list):
-                config_group.attrs[key] = value
+        for key, dtype in parameters_to_save.items():
+            value = getattr(Parameters, key)
+            config_group.attrs[key] = dtype(value)
 
-        # Store initial conditions and mesh
-        self.hdf5_file.create_dataset(
-            "initial_condition", data=Parameters.initial_condition
-        )
         self.hdf5_file.create_dataset("X", data=Parameters.mesh_grid[0])
         self.hdf5_file.create_dataset("Y", data=Parameters.mesh_grid[1])
         self.hdf5_file.create_dataset("Z", data=Parameters.mesh_grid[2])
@@ -80,13 +90,13 @@ class HDFOutput:
             dtype=SolutionVector.data.dtype,
         )
 
-        self.times_dataset = self.hdf5_file.create_dataset(
-            "times", shape=(1,), maxshape=(None,), dtype=float
+        self.timestamps_dataset = self.hdf5_file.create_dataset(
+            "timestamps", shape=(1,), maxshape=(None,), dtype=float
         )
 
         # Store initial data
         self.solution_dataset[0] = SolutionVector.data
-        self.times_dataset[0] = 0.0
+        self.timestamps_dataset[0] = 0.0
         self.hdf5_file.flush()
 
     def dump(self, SolutionVector, time=None):
@@ -103,11 +113,13 @@ class HDFOutput:
 
         # Resize datasets to accommodate new data
         self.solution_dataset.resize((self.dump_no + 1,) + SolutionVector.data.shape)
-        self.times_dataset.resize((self.dump_no + 1,))
+        self.timestamps_dataset.resize((self.dump_no + 1,))
 
         # Append new data
         self.solution_dataset[self.dump_no] = SolutionVector.data
-        self.times_dataset[self.dump_no] = time if time is not None else self.dump_no
+        self.timestamps_dataset[self.dump_no] = (
+            time if time is not None else self.dump_no
+        )
 
         self.hdf5_file.flush()
 
@@ -121,7 +133,7 @@ class HDFOutput:
         self.close()
 
 
-class Output:
+class NPYOutput:
     """Output utilities class
 
     Tool for outputting data from the simulation
@@ -212,6 +224,26 @@ class Parameters:
             self.mesh_size[1] / self.mesh_shape[1],
             self.mesh_size[2] / self.mesh_shape[2],
         )
+        self.mesh_size = config["mesh_size"]
+        if self.with_mhd:
+            self.variables = [
+                "density",
+                "xmomentum",
+                "ymomentum",
+                "zmomentum",
+                "energy",
+                "xmag",
+                "ymag",
+                "zmag",
+            ]
+        else:
+            self.variables = [
+                "density",
+                "xmomentum",
+                "ymomentum",
+                "zmomentum",
+                "energy",
+            ]
         for i, axis in enumerate(self.boundary_type):
             if axis == "fixed":
                 self.boundary_value[i] = [
@@ -293,70 +325,49 @@ class Parameters:
 
 
 class Reader:
-    """Data loading and plotting utility
+    """HDF5 Data loading and plotting utility
 
-    Load simulation data from a directory and plot results
+    Load simulation data from HDF5 file and plot results
 
     Attributes
     ----------
     file_path : str
-        simulation run directory
+        path to the HDF5 simulation file
     run_config : dict
         python dictionary containing run configuration
     data : dict
         dictionary containing raw simulation data for each variable
     """
 
-    def __init__(self, run_dir_path):
+    def __init__(self, hdf5_file_path):
         """
         Parameters
         ----------
-        run_dir_path : str
-            the simulation run directory
+        hdf5_file_path : str
+            path to the HDF5 simulation file
         """
-        self.file_path = run_dir_path
-        self.run_config = None
-        with open(self.file_path + "/config.json", "r") as file:
-            self.run_config = json.load(file)
+        self.file_path = hdf5_file_path
+        self.hdf5_file = h5py.File(hdf5_file_path, "r")
 
-        if self.run_config["with_mhd"]:
-            self.variables = [
-                "density",
-                "xmomentum",
-                "ymomentum",
-                "zmomentum",
-                "energy",
-                "xmag",
-                "ymag",
-                "zmag",
-            ]
-        else:
-            self.variables = [
-                "density",
-                "xmomentum",
-                "ymomentum",
-                "zmomentum",
-                "energy",
-            ]
+        # Load configuration from HDF5 attributes
+        self.run_config = dict(self.hdf5_file["config"].attrs)
+        self.data_dim = list(self.run_config["mesh_shape"]).count(1)
 
-        self.data_dim = self.run_config["mesh_shape"].count(1)
-
-        self.data = {variable: [] for variable in self.variables}
+        # Load grid data
         self.grid = (
-            np.squeeze(np.load(self.file_path + "/X.npy")),
-            np.squeeze(np.load(self.file_path + "/Y.npy")),
-            np.squeeze(np.load(self.file_path + "/Z.npy")),
+            np.squeeze(self.hdf5_file["X"][()]),
+            np.squeeze(self.hdf5_file["Y"][()]),
+            np.squeeze(self.hdf5_file["Z"][()]),
         )
-        self.times = np.load(self.file_path + "/T.npy")
 
-        for i in range(self.run_config["n_dumps"]):
-            filename = self.file_path + "/gawain_output_" + str(i) + ".npy"
-            filedata = np.load(filename)
-            for j, variable in enumerate(self.variables):
-                self.data[variable].append(filedata[j])
+        # Load times
+        self.times = self.hdf5_file["timestamps"][()]
 
-        for variable in self.variables:
-            self.data[variable] = np.stack(self.data[variable])
+        # Load solution data and organize by variable
+        solutions = self.hdf5_file["solutions"][()]
+        self.data = {}
+        for j, variable in enumerate(self.run_config["variables"]):
+            self.data[variable] = solutions[:, j]
 
     def plot(self, variable, timesteps=[0], save_as=None, vmax=1, vmin=0):
         """Plot the output for a particular variable
@@ -382,7 +393,6 @@ class Reader:
             to_plot = to_plot.reshape(new_shape)
             fig, ax = plt.subplots()
             ax.set_title("Plot of " + variable)
-            # ax.set_xlim(0, new_shape[1])
             ax.set_ylim(vmin, vmax)
             ax.set_xlabel("x")
             ax.set_ylabel(variable)
@@ -402,6 +412,8 @@ class Reader:
 
             n_plots = len(timesteps)
             fig, axs = plt.subplots(1, n_plots, figsize=(5 * n_plots, 5))
+            if n_plots == 1:
+                axs = [axs]
             fig.suptitle("Plots of " + variable)
             for step in timesteps:
                 subplot = axs[timesteps.index(step)]
@@ -413,8 +425,6 @@ class Reader:
                     vmax=vmax,
                     cmap="plasma",
                 )
-                # subplot.set_xlim(0, new_shape[2])
-                # subplot.set_ylim(0, new_shape[1])
                 subplot.set_xlabel("x")
                 subplot.set_ylabel("y")
                 subplot.set_title(f"step={step}, t={self.times[step]:.2f}")
@@ -427,3 +437,12 @@ class Reader:
     def get_data(self, variable):
         """Get the raw data for a particular variable"""
         return self.data[variable]
+
+    def close(self):
+        """Close the HDF5 file"""
+        if self.hdf5_file:
+            self.hdf5_file.close()
+
+    def __del__(self):
+        """Destructor to ensure file is closed"""
+        self.close()

@@ -3,8 +3,13 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from gawain.numerics import (BoundarySetter, Clock, GravitySource,
-                             MHDSolutionVector, SolutionVector)
+from gawain.numerics import (
+    BoundarySetter,
+    Clock,
+    GravitySource,
+    MHDSolutionVector,
+    SolutionVector,
+)
 
 
 @pytest.fixture

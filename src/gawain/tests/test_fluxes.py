@@ -3,9 +3,18 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from gawain.fluxes import (EulerFluxX, EulerFluxY, EulerFluxZ, FluxCalculator,
-                           HLLFluxer, LaxFriedrichsFluxer, LaxWendroffFluxer,
-                           MHDFluxX, MHDFluxY, MHDFluxZ)
+from gawain.fluxes import (
+    EulerFluxX,
+    EulerFluxY,
+    EulerFluxZ,
+    FluxCalculator,
+    HLLFluxer,
+    LaxFriedrichsFluxer,
+    LaxWendroffFluxer,
+    MHDFluxX,
+    MHDFluxY,
+    MHDFluxZ,
+)
 from gawain.numerics import MHDSolutionVector, SolutionVector
 
 
