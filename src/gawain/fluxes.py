@@ -193,15 +193,9 @@ class HLLFluxer(FluxCalculator):
             uminus1, u, uplus1, axis
         )
 
-        # right interface flux calculation
-        # Sl, Sr = self.wave_speeds(u, uplus1, axis)
-        # right_interface_flux = self.hll_flux(Sl, Sr, u, uplus1, axis)
         Sl, Sr = self.wave_speeds(URl, URr, axis)
         right_interface_flux = self.hll_flux(Sl, Sr, URl, URr, axis)
 
-        # left interface flux calculation
-        # Sl, Sr = self.wave_speeds(uminus1, u, axis)
-        # left_interface_flux = self.hll_flux(Sl, Sr, uminus1, u, axis)
         Sl, Sr = self.wave_speeds(ULl, ULr, axis)
         left_interface_flux = self.hll_flux(Sl, Sr, ULl, ULr, axis)
 

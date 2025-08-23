@@ -1,9 +1,9 @@
 # Gawain
 
-Gawain is a 2D magnetohydrodynamic simulation code written in python. This software currently supports simulations of the following physical systems:
+Gawain is a 2D/3D magnetohydrodynamic simulation code written in python. This software currently supports simulations of the following physical systems:
 
-- 2D inviscid, compressible hydrodynamics
-- 2D ideal magnetohydrodynamics
+- 2D/3D inviscid, compressible hydrodynamics
+- 2D/3D ideal magnetohydrodynamics
 
 Gawain currently supports the following boundary conditions:
 
@@ -14,23 +14,15 @@ Gawain currently supports the following boundary conditions:
 
 Gawain can also be used to simulate hydrodynamics or magnetohydrodynamics in the presence of a gravitational field or an arbitrary source function.  
 
-## Getting Started
 
-#### Prerequisites
+## Installation
 
-The aim of this code was simplicity, so the dependencies have been kept to a minimum. However, a few key external libraries are required and can be installed using 
+Clone the repository and pip install 
 
+```bash
+pip install -e .
 ```
- pip install -r requirements.txt
-```
 
-#### Installing
-
-The package is set up using
-
-```
-python ./setup.py install
-```
 
 ## Examples
 
@@ -47,8 +39,6 @@ output_dir = "."
 
 cfl = 0.5
 with_mhd = False
-with_thermal_conductivity = False
-with_resistivity = False
 
 t_max = 0.25
 
@@ -99,6 +89,7 @@ config = {
     "cfl": cfl,
     "mesh_shape": mesh_shape,
     "mesh_size": mesh_size,
+    "mesh_grid": (X, Y, Z),
     "t_max": t_max,
     "n_dumps": n_outputs,
     "initial_condition": initial_condition,
