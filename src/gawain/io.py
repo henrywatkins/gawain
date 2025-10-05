@@ -13,7 +13,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+from pydantic import ValidationError
 
+import gawain.config as config
 import gawain.fluxes as fluxes
 import gawain.integrators as integrator
 import gawain.numerics as nu
@@ -205,42 +207,75 @@ class Parameters:
 
     The Parameters objects holds all simulation configuration information.
     This includes mesh parameters, method, initial and boundary conditions.
+    Uses Pydantic for comprehensive input validation.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config_dict: Dict[str, Any]) -> None:
         """
         Parameters
         ----------
-        config : dict
+        config_dict : dict
             a python dictionary containing all configuration info
+
+        Raises
+        ------
+        ValidationError
+            If the configuration is invalid
+        ValueError
+            If configuration values are inconsistent or invalid
         """
+        try:
+            # Validate configuration using Pydantic
+            self.validated_config = config.validate_config(config_dict)
+        except ValidationError as e:
+            raise ValueError(f"Configuration validation failed: {e}")
+
+        # Extract validated parameters
         self.available_integrators = ["euler"]
         self.available_fluxers = ["base", "lax-wendroff", "lax-friedrichs", "hll"]
-        self.integrator_type = config["integrator"]
-        self.fluxer_type = config["fluxer"]
-        self.run_name = config["run_name"]
-        self.cfl = config["cfl"]
-        self.mesh_shape = config["mesh_shape"]
-        self.mesh_size = config["mesh_size"]
-        self.mesh_grid = config["mesh_grid"]
-        self.t_max = config["t_max"]
-        self.n_outputs = config["n_dumps"]
-        self.adi_idx = config["adi_idx"]
-        self.initial_condition = config[
-            "initial_condition"
-        ]  # .astype(np.float32)  # make this a f32 numpy array
-        self.source_data = config["source"] if "source" in config.keys() else None
-        self.gravity_field = config["gravity"] if "gravity" in config.keys() else None
-        self.boundary_type = config["boundary_type"]
-        self.boundary_value = [[], [], []]
-        self.output_dir = config["output_dir"]
-        self.with_mhd = config["with_mhd"]
+
+        # Basic simulation parameters
+        self.integrator_type = self.validated_config.integrator.value
+        self.fluxer_type = self.validated_config.fluxer.value
+        self.run_name = self.validated_config.run_name
+        self.cfl = self.validated_config.cfl
+        self.t_max = self.validated_config.t_max
+        self.n_outputs = self.validated_config.n_dumps
+        self.output_dir = self.validated_config.output_dir
+        self.adi_idx = self.validated_config.adi_idx
+        self.with_mhd = self.validated_config.with_mhd
+
+        # Mesh parameters
+        self.mesh_shape = self.validated_config.mesh_shape
+        self.mesh_size = self.validated_config.mesh_size
+        self.mesh_grid = self.validated_config.mesh_grid
+
+        # Calculate cell sizes
         self.cell_sizes = (
             self.mesh_size[0] / self.mesh_shape[0],
             self.mesh_size[1] / self.mesh_shape[1],
             self.mesh_size[2] / self.mesh_shape[2],
         )
-        self.mesh_size = config["mesh_size"]
+
+        # Initial and boundary conditions
+        self.initial_condition = self.validated_config.initial_condition
+        self.source_data = self.validated_config.source
+        self.gravity_field = self.validated_config.gravity
+
+        # Convert boundary types from enum to string list
+        self.boundary_type = [bt.value for bt in self.validated_config.boundary_type]
+        self.boundary_value = [[], [], []]
+
+        # Set up boundary values for fixed boundaries
+        if self.initial_condition is not None:
+            for i, axis in enumerate(self.boundary_type):
+                if axis == "fixed":
+                    self.boundary_value[i] = [
+                        self.initial_condition.take(0, axis=i + 1),
+                        self.initial_condition.take(-1, axis=i + 1),
+                    ]
+
+        # Variable names based on MHD flag
         if self.with_mhd:
             self.variables = [
                 "density",
@@ -260,28 +295,27 @@ class Parameters:
                 "zmomentum",
                 "energy",
             ]
-        for i, axis in enumerate(self.boundary_type):
-            if axis == "fixed":
-                self.boundary_value[i] = [
-                    self.initial_condition.take(0, axis=i + 1),
-                    self.initial_condition.take(-1, axis=i + 1),
-                ]
-        config.pop("initial_condition", None)
-        config.pop("source", None)
-        config.pop("gravity", None)
-        config.pop("mesh_grid", None)
-        self.config = config
+
+        # Create config dict for backward compatibility (without large arrays)
+        self.config = {
+            "run_name": self.run_name,
+            "cfl": self.cfl,
+            "mesh_shape": self.mesh_shape,
+            "mesh_size": self.mesh_size,
+            "t_max": self.t_max,
+            "n_dumps": self.n_outputs,
+            "boundary_type": self.boundary_type,
+            "adi_idx": self.adi_idx,
+            "integrator": self.integrator_type,
+            "fluxer": self.fluxer_type,
+            "output_dir": self.output_dir,
+            "with_mhd": self.with_mhd,
+        }
 
     def create_integrator(self) -> integrator.Integrator:
         """create an integrator object"""
-        if self.integrator_type in self.available_integrators:
-            return integrator.Integrator(self)
-        else:
-            raise KeyError(
-                "Integrator not available, only the following type are available: {}".format(
-                    self.available_integrators
-                )
-            )
+        # Validation already ensures integrator_type is valid
+        return integrator.Integrator(self)
 
     def create_fluxer(
         self,
@@ -292,47 +326,29 @@ class Parameters:
         fluxes.LaxFriedrichsFluxer,
     ]:
         """create a flux calculation object"""
-        if self.fluxer_type in self.available_fluxers:
-            if self.fluxer_type == "base":
-                return fluxes.FluxCalculator()
-            elif self.fluxer_type == "hll":
-                return fluxes.HLLFluxer()
-            elif self.fluxer_type == "lax-wendroff":
-                return fluxes.LaxWendroffFluxer()
-            elif self.fluxer_type == "lax-friedrichs":
-                return fluxes.LaxFriedrichsFluxer()
+        # Validation already ensures fluxer_type is valid
+        if self.fluxer_type == "base":
+            return fluxes.FluxCalculator()
+        elif self.fluxer_type == "hll":
+            return fluxes.HLLFluxer()
+        elif self.fluxer_type == "lax-wendroff":
+            return fluxes.LaxWendroffFluxer()
+        elif self.fluxer_type == "lax-friedrichs":
+            return fluxes.LaxFriedrichsFluxer()
         else:
-            raise KeyError(
-                "Fluxer not available, only the following type are available: {}".format(
-                    self.available_fluxers
-                )
-            )
+            # This should never happen due to validation, but keep for safety
+            raise KeyError(f"Unknown fluxer type: {self.fluxer_type}")
 
     def create_source(self) -> Optional[np.ndarray]:
         """create a source object"""
-        if self.source_data is not None:
-            if self.source_data.shape == self.initial_condition.shape:
-                return self.source_data
-            else:
-                raise TypeError(
-                    "source data has inappropriate mesh shape, it must be the same shape as initial condition mesh shape"
-                )
-        return None
+        # Validation already ensures source_data has correct shape if present
+        return self.source_data
 
     def create_gravity(self) -> Optional[nu.GravitySource]:
         """create a gravity source object"""
+        # Validation already ensures gravity_field has correct shape if present
         if self.gravity_field is not None:
-            if self.gravity_field.shape == (
-                3,
-                self.mesh_shape[0],
-                self.mesh_shape[1],
-                self.mesh_shape[2],
-            ):
-                return nu.GravitySource(self.gravity_field)
-            else:
-                raise TypeError(
-                    "gravity field has inappropriate mesh shape, it must be (3, mesh_shape)"
-                )
+            return nu.GravitySource(self.gravity_field)
         return None
 
     def print_params(self) -> None:
