@@ -8,11 +8,15 @@ dependencies = [
     "h5py>=3.14.0",
     "jupyter>=1.1.1",
     "matplotlib>=3.10.5",
-    "numba>=0.61.2",
     "numpy>=2.2.6",
     "pydantic>=2.11.10",
     "scipy>=1.16.1",
     "tqdm==4.65",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "cupy-cuda13x>=13.6.0",
 ]
 
 [dependency-groups]
