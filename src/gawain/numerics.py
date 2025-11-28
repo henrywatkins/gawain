@@ -13,6 +13,8 @@ from typing import Any, List, Tuple, Union
 import numpy as np
 from tqdm import tqdm
 
+from .backend import xp, to_cpu, to_gpu
+
 
 class Clock:
     """Timing utility for simulations
@@ -42,8 +44,7 @@ class Clock:
         self.output_spacing = self.end_time / Parameters.n_outputs
         self.next_output_time = self.output_spacing
         self.bar = tqdm(
-            total=self.end_time + 0.01
-        )  # , bar_format='{l_bar}{bar}| {n_fmt:.2f}/{total_fmt} [{elapsed}<{remaining}]')
+            total=self.end_time  , bar_format='{l_bar}{bar}| {n:.3f}/{total_fmt} [{elapsed}<{remaining}]')
         self.wallclock_start = time.process_time()
 
     def is_end(self) -> bool:
@@ -135,10 +136,10 @@ class SolutionVector:
         self.dx, self.dy, self.dz = Parameters.cell_sizes
         self.cell_sizes = Parameters.cell_sizes
         self.adi_idx = Parameters.adi_idx
-        self.data = Parameters.initial_condition
+        self.data = to_gpu(Parameters.initial_condition)
         self.cfl = Parameters.cfl
         self.boundsetter = BoundarySetter(
-            Parameters.boundary_type, Parameters.initial_condition
+            Parameters.boundary_type, to_gpu(Parameters.initial_condition)
         )
 
     def copy(self) -> SolutionVector:
@@ -154,16 +155,16 @@ class SolutionVector:
         new_vector.boundsetter = self.boundsetter
         return new_vector
 
-    def eigen_speeds(self, axis: int) -> Tuple[np.ndarray, np.ndarray]:
+    def eigen_speeds(self, axis: int) -> Tuple[xp.ndarray, xp.ndarray]:
         """Return the eigen speeds along a given axis"""
         vel = self.vel(axis)
         cs = self.sound_speed()
         return vel - cs, vel + cs
 
-    def calculate_min_max_wave_speeds(self, axis: int) -> Tuple[np.ndarray, np.ndarray]:
+    def calculate_min_max_wave_speeds(self, axis: int) -> Tuple[xp.ndarray, xp.ndarray]:
         """Return the the minimum and maximum wave speeds along a given axis"""
         lambda1, lambda2 = self.eigen_speeds(axis)
-        return np.minimum(lambda1, lambda2), np.maximum(lambda1, lambda2)
+        return xp.minimum(lambda1, lambda2), xp.maximum(lambda1, lambda2)
 
     def calculate_timestep(self) -> float:
         """Calculate the timestep size, using the wave speeds and CFL value
@@ -176,22 +177,22 @@ class SolutionVector:
         min_wave_speed_x, max_wave_speed_x = self.calculate_min_max_wave_speeds(0)
         min_wave_speed_y, max_wave_speed_y = self.calculate_min_max_wave_speeds(1)
         min_wave_speed_z, max_wave_speed_z = self.calculate_min_max_wave_speeds(2)
-        max_in_x = max(np.abs(min_wave_speed_x).max(), np.abs(max_wave_speed_x).max())
-        max_in_y = max(np.abs(min_wave_speed_y).max(), np.abs(max_wave_speed_y).max())
-        max_in_z = max(np.abs(min_wave_speed_z).max(), np.abs(max_wave_speed_z).max())
+        max_in_x = max(float(xp.abs(min_wave_speed_x).max()), float(xp.abs(max_wave_speed_x).max()))
+        max_in_y = max(float(xp.abs(min_wave_speed_y).max()), float(xp.abs(max_wave_speed_y).max()))
+        max_in_z = max(float(xp.abs(min_wave_speed_z).max()), float(xp.abs(max_wave_speed_z).max()))
         timestep_x = self.cfl * self.dx / max_in_x
         timestep_y = self.cfl * self.dy / max_in_y
         timestep_z = self.cfl * self.dz / max_in_z
         self.timestep = min(timestep_x, timestep_y, timestep_z)
         return max(self.timestep, 1e-8)
 
-    def copy_with_data(self, array: np.ndarray) -> SolutionVector:
+    def copy_with_data(self, array: xp.ndarray) -> SolutionVector:
         """Return a copy of the solution vector with new data"""
         new_vector = self.copy()
         new_vector.data = array
         return new_vector
 
-    def centroid(self) -> np.ndarray:
+    def centroid(self) -> xp.ndarray:
         """Return the solution vector data for each mesh cell
 
         Returns
@@ -201,7 +202,7 @@ class SolutionVector:
         """
         return self.data
 
-    def get_variable(self, variable_name: str) -> np.ndarray:
+    def get_variable(self, variable_name: str) -> xp.ndarray:
         """Get the solution data specific to a variable
 
         Parameters
@@ -211,7 +212,7 @@ class SolutionVector:
 
         Returns
         -------
-        ndarray
+        xp.ndarray
             the solution vector data for the specified variable
         """
         index = self.variable_names.index(variable_name)
@@ -223,20 +224,20 @@ class SolutionVector:
         new_vector = self.copy_with_data(rolled)
         return new_vector
 
-    def update(self, array: np.ndarray) -> None:
+    def update(self, array: xp.ndarray) -> None:
         """Update the solution vector data with an array of values
 
         u' = u + delta t * array
 
         Parameters
         ----------
-        array : ndarray
+        array : xp.ndarray
             the array to update the solution vector
         """
 
         self.data += self.timestep * array
 
-    def dens(self) -> np.ndarray:
+    def dens(self) -> xp.ndarray:
         """Return the density field data"""
         return self.data[0]
 
@@ -301,19 +302,19 @@ class MHDSolutionVector(SolutionVector):
         new_vector.boundsetter = self.boundsetter
         return new_vector
 
-    def mag(self, axis: int) -> np.ndarray:
+    def mag(self, axis: int) -> xp.ndarray:
         """Return the magnetic field data for a given axis"""
         return self.data[axis + 5]
 
-    def magTotalSqr(self) -> np.ndarray:
+    def magTotalSqr(self) -> xp.ndarray:
         """Return the total magnetic field squared data |B|**2"""
         return self.data[5] ** 2 + self.data[6] ** 2 + self.data[7] ** 2
 
-    def magnetic_pressure(self) -> np.ndarray:
+    def magnetic_pressure(self) -> xp.ndarray:
         """Return the magnetic pressure field data"""
         return self.magTotalSqr() * 0.5
 
-    def pressure(self) -> np.ndarray:
+    def pressure(self) -> xp.ndarray:
         """Return the thermal pressure field data"""
         thermal_en = (
             self.energy()
@@ -321,26 +322,26 @@ class MHDSolutionVector(SolutionVector):
             - self.magnetic_pressure()
         )
         pressure = (self.adi_idx - 1.0) * thermal_en
-        pressure = np.maximum(pressure, 1e-8)
+        pressure = xp.maximum(pressure, 1e-8)
         return pressure
 
-    def total_pressure(self) -> np.ndarray:
+    def total_pressure(self) -> xp.ndarray:
         """Return the total pressure, magnetic plus thermal"""
         return self.pressure() + self.magnetic_pressure()
 
-    def alfven_speed(self) -> np.ndarray:
+    def alfven_speed(self) -> xp.ndarray:
         """Return the Alfven speed for each mesh cell"""
-        return np.sqrt(self.magTotalSqr() / self.dens())
+        return xp.sqrt(self.magTotalSqr() / self.dens())
 
-    def fast_magnetosonic_speed(self, axis: int) -> np.ndarray:
+    def fast_magnetosonic_speed(self, axis: int) -> xp.ndarray:
         """Return the fast magnetosonic speed in the specified direction for each mesh cell"""
         va2 = self.alfven_speed() ** 2
         vs2 = self.sound_speed() ** 2
         vax2 = self.mag(axis) ** 2 / self.dens()
-        quad = va2 + vs2 + np.sqrt((va2 + vs2) ** 2 - 4 * vax2 * vs2)
-        return np.sqrt(0.5 * quad)
+        quad = va2 + vs2 + xp.sqrt((va2 + vs2) ** 2 - 4 * vax2 * vs2)
+        return xp.sqrt(0.5 * quad)
 
-    def eigen_speeds(self, axis: int) -> Tuple[np.ndarray, np.ndarray]:
+    def eigen_speeds(self, axis: int) -> Tuple[xp.ndarray, xp.ndarray]:
         vel = self.vel(axis)
         cf = self.fast_magnetosonic_speed(axis)
         return vel - cf, vel + cf
@@ -362,7 +363,7 @@ class BoundarySetter:
     """
 
     def __init__(
-        self, boundary_types: List[str], initial_boundary_values: np.ndarray
+        self, boundary_types: List[str], initial_boundary_values: xp.ndarray
     ) -> None:
         self.boundary_types = boundary_types
         self.initial_values = initial_boundary_values
@@ -375,16 +376,16 @@ class BoundarySetter:
         for axis in range(3):  # x, y, z axes
             array_axis = axis + 1  # Skip the variable dimension
             axis_size = shape[array_axis]
-            indices = np.arange(axis_size)
+            indices = xp.arange(axis_size)
 
             for direction in [-1, 1]:  # Both shift directions
                 key = (array_axis, direction, axis_size)
                 self._shift_indices[key] = (indices - direction) % axis_size
 
-    def set_stencil(self, array: np.ndarray, axis: int, direction: int) -> np.ndarray:
+    def set_stencil(self, array: xp.ndarray, axis: int, direction: int) -> xp.ndarray:
         # Use pre-computed indices
         key = (axis + 1, direction, array.shape[axis + 1])
-        stencil_arm = np.take(array, self._shift_indices[key], axis=axis + 1)
+        stencil_arm = xp.take(array, self._shift_indices[key], axis=axis + 1)
         boundary_type = self.boundary_types[axis]
         shape = array.shape
 
@@ -408,46 +409,46 @@ class BoundarySetter:
 
     def get_boundary_indices(
         self, axis: int, direction: int, shape: Tuple[int, ...]
-    ) -> Tuple[np.ndarray, ...]:
-        variables_index_set = np.arange(shape[0])
-        x_index_set = np.arange(shape[1])
-        y_index_set = np.arange(shape[2])
-        z_index_set = np.arange(shape[3])
+    ) -> Tuple[xp.ndarray, ...]:
+        variables_index_set = xp.arange(shape[0])
+        x_index_set = xp.arange(shape[1])
+        y_index_set = xp.arange(shape[2])
+        z_index_set = xp.arange(shape[3])
 
         if axis == 0:
             edge_value = 0 if direction == 1 else shape[1] - 1
-            x_index_set = np.array([edge_value])
+            x_index_set = xp.array([edge_value])
         elif axis == 1:
             edge_value = 0 if direction == 1 else shape[2] - 1
-            y_index_set = np.array([edge_value])
+            y_index_set = xp.array([edge_value])
         elif axis == 2:
             edge_value = 0 if direction == 1 else shape[3] - 1
-            z_index_set = np.array([edge_value])
+            z_index_set = xp.array([edge_value])
 
-        return np.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
+        return xp.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
 
     def velocity_boundary_indices(
         self, axis: int, direction: int, shape: Tuple[int, ...]
-    ) -> Tuple[np.ndarray, ...]:
-        variables_index_set = np.arange(shape[0])
-        x_index_set = np.arange(shape[1])
-        y_index_set = np.arange(shape[2])
-        z_index_set = np.arange(shape[3])
+    ) -> Tuple[xp.ndarray, ...]:
+        variables_index_set = xp.arange(shape[0])
+        x_index_set = xp.arange(shape[1])
+        y_index_set = xp.arange(shape[2])
+        z_index_set = xp.arange(shape[3])
 
         if axis == 0:
-            variables_index_set = np.array([1])
+            variables_index_set = xp.array([1])
             edge_value = 0 if direction == 1 else shape[1] - 1
-            x_index_set = np.array([edge_value])
+            x_index_set = xp.array([edge_value])
         elif axis == 1:
-            variables_index_set = np.array([2])
+            variables_index_set = xp.array([2])
             edge_value = 0 if direction == 1 else shape[2] - 1
-            y_index_set = np.array([edge_value])
+            y_index_set = xp.array([edge_value])
         elif axis == 2:
-            variables_index_set = np.array([3])
+            variables_index_set = xp.array([3])
             edge_value = 0 if direction == 1 else shape[3] - 1
-            z_index_set = np.array([edge_value])
+            z_index_set = xp.array([edge_value])
 
-        return np.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
+        return xp.ix_(variables_index_set, x_index_set, y_index_set, z_index_set)
 
 
 class GravitySource:
@@ -461,12 +462,12 @@ class GravitySource:
         the gravitational field mesh data
     """
 
-    def __init__(self, gravity_field: np.ndarray) -> None:
+    def __init__(self, gravity_field: xp.ndarray) -> None:
         self.field = gravity_field
 
     def calculate_gravity_source(
         self, solvec: Union[SolutionVector, MHDSolutionVector]
-    ) -> np.ndarray:
+    ) -> xp.ndarray:
         """Calculates the gravity field source terms
 
         Parameters
@@ -476,10 +477,10 @@ class GravitySource:
 
         Returns
         -------
-        gravity_source : ndarray
+        gravity_source : xp.ndarray
             the gravitational source term contribution to the system update
         """
-        gravity_source = np.zeros(solvec.data.shape)
+        gravity_source = xp.zeros(solvec.data.shape)
         gravity_source[1] = solvec.dens() * self.field[0]
         gravity_source[2] = solvec.dens() * self.field[1]
         gravity_source[3] = solvec.dens() * self.field[2]

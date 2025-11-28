@@ -8,19 +8,18 @@ hydrodynamic and MHD fluxes
 
 from typing import List, Tuple, Union
 
-import numpy as np
-
+from .backend import xp
 from .numerics import MHDSolutionVector, SolutionVector
 
 
-def EulerFlux(u: Union[SolutionVector, MHDSolutionVector], axis: int) -> np.ndarray:
+def EulerFlux(u: Union[SolutionVector, MHDSolutionVector], axis: int) -> xp.ndarray:
     """Calculate the Euler flux along a given axis from a solution vector"""
     dens = u.dens()
     momX, momY, momZ = u.mom(0), u.mom(1), u.mom(2)
     en = u.energy()
     pressure = u.pressure()
     axis_mom = u.mom(axis)
-    flux = np.array(
+    flux = xp.array(
         [
             axis_mom,
             axis_mom * momX / dens,
@@ -33,7 +32,7 @@ def EulerFlux(u: Union[SolutionVector, MHDSolutionVector], axis: int) -> np.ndar
     return flux
 
 
-def MHDFlux(u: MHDSolutionVector, axis: int) -> np.ndarray:
+def MHDFlux(u: MHDSolutionVector, axis: int) -> xp.ndarray:
     """Calculate the MHD flux along a given axis from a solution vector"""
     dens = u.dens()
     momX, momY, momZ = u.mom(0), u.mom(1), u.mom(2)
@@ -42,7 +41,7 @@ def MHDFlux(u: MHDSolutionVector, axis: int) -> np.ndarray:
     en = u.energy()
     tpressure = u.total_pressure()
     bx, by, bz = u.mag(0), u.mag(1), u.mag(2)
-    flux = np.array(
+    flux = xp.array(
         [
             axis_mom,
             axis_mom * momX / dens - axis_b * bx,
@@ -81,7 +80,7 @@ class FluxCalculator:
 
     def _specific_fluxes(
         self, u: Union[SolutionVector, MHDSolutionVector]
-    ) -> List[np.ndarray]:
+    ) -> List[xp.ndarray]:
         return [
             self.flux_function(u.get_neighbour_state(i, j), i)
             for i in range(3)
@@ -90,7 +89,7 @@ class FluxCalculator:
 
     def calculate_flux_divergence(
         self, u: Union[SolutionVector, MHDSolutionVector]
-    ) -> np.ndarray:
+    ) -> xp.ndarray:
         """Flux divergence calculation"""
 
         fluxes = self._specific_fluxes(u)
@@ -111,10 +110,10 @@ class HLLFluxer(FluxCalculator):
     def __init__(self) -> None:
         super(HLLFluxer, self).__init__()
 
-    def minmod(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    def minmod(self, a: xp.ndarray, b: xp.ndarray) -> xp.ndarray:
         """minmod limiter"""
-        return np.where(
-            a * b > 0.0, np.sign(a) * np.minimum(np.abs(a), np.abs(b)), 0.0 * a
+        return xp.where(
+            a * b > 0.0, xp.sign(a) * xp.minimum(xp.abs(a), xp.abs(b)), 0.0 * a
         )
 
     def wave_speeds(
@@ -122,20 +121,20 @@ class HLLFluxer(FluxCalculator):
         Ul: Union[SolutionVector, MHDSolutionVector],
         Ur: Union[SolutionVector, MHDSolutionVector],
         axis: int,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[xp.ndarray, xp.ndarray]:
         """Calculate the min/max wave speeds at the inteface between two cells"""
         ulminusal, ulplusal = Ul.eigen_speeds(axis)
         urminusal, urplusal = Ur.eigen_speeds(axis)
-        return np.minimum(ulminusal, urminusal), np.maximum(ulplusal, urplusal)
+        return xp.minimum(ulminusal, urminusal), xp.maximum(ulplusal, urplusal)
 
     def hll_flux(
         self,
-        Sl: np.ndarray,
-        Sr: np.ndarray,
+        Sl: xp.ndarray,
+        Sr: xp.ndarray,
         Ul: Union[SolutionVector, MHDSolutionVector],
         Ur: Union[SolutionVector, MHDSolutionVector],
         axis: int,
-    ) -> np.ndarray:
+    ) -> xp.ndarray:
         """Calculate the HLLE flux at the interface"""
 
         fl = self.flux_function(Ul, axis)
@@ -146,7 +145,7 @@ class HLLFluxer(FluxCalculator):
 
         fhll = (Sr * fl - Sl * fr + Sl * Sr * (ur - ul)) / (Sr - Sl)
 
-        return np.select(
+        return xp.select(
             [Sl >= 0.0, Sr <= 0.0, (Sl <= 0.0) & (Sr >= 0.0)], [fl, fr, fhll]
         )
 
@@ -223,7 +222,7 @@ class HLLFluxer(FluxCalculator):
 
     def hll_directional_fluxes(
         self, u: Union[SolutionVector, MHDSolutionVector], axis: int
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[xp.ndarray, xp.ndarray]:
         uplus1 = u.get_neighbour_state(axis, 1)
         uminus1 = u.get_neighbour_state(axis, -1)
         (ULl, ULr), (URl, URr) = self.MUSCL_Hancock_reconstruction(
@@ -240,7 +239,7 @@ class HLLFluxer(FluxCalculator):
 
     def _specific_fluxes(
         self, u: Union[SolutionVector, MHDSolutionVector]
-    ) -> List[np.ndarray]:
+    ) -> List[xp.ndarray]:
         """HLL solver - specifc flux calculation"""
         fluxes = []
         for i in range(3):
@@ -260,7 +259,7 @@ class LaxFriedrichsFluxer(FluxCalculator):
 
     def _specific_fluxes(
         self, u: Union[SolutionVector, MHDSolutionVector]
-    ) -> List[np.ndarray]:
+    ) -> List[xp.ndarray]:
         """Lax-Friedrichs -specific flux calculation"""
         u1 = u.centroid()
         dt = u.timestep
@@ -294,7 +293,7 @@ class LaxWendroffFluxer(FluxCalculator):
 
     def _specific_fluxes(
         self, u: Union[SolutionVector, MHDSolutionVector]
-    ) -> List[np.ndarray]:
+    ) -> List[xp.ndarray]:
         """Lax-Wendroff - specific flux calculation"""
 
         dt = u.timestep

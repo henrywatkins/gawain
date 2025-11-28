@@ -14,3 +14,5 @@ runs/
 example_scripts/.ipynb_checkpoints/
 gawain/.ipynb_checkpoints/
 .ipynb_checkpoints
+paper/
+install_amd_gpu.txt

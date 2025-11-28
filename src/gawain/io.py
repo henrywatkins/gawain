@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pydantic import ValidationError
 
+from .backend import BACKEND, to_cpu, to_gpu
 import gawain.config as config
 import gawain.fluxes as fluxes
 import gawain.integrators as integrator
@@ -55,6 +56,8 @@ class Output:
         self.hdf5_file = None
         # Create HDF5 file
         hdf5_filename = self.save_file + ".h5"
+        if not os.path.exists(Parameters.output_dir):
+            os.makedirs(Parameters.output_dir)
         if not os.path.exists(hdf5_filename):
             self.hdf5_file = h5py.File(hdf5_filename, "w")
         else:
@@ -104,8 +107,8 @@ class Output:
             "timestamps", shape=(1,), maxshape=(None,), dtype=float
         )
 
-        # Store initial data
-        self.solution_dataset[0] = SolutionVector.data
+        # Store initial data (convert to CPU for I/O)
+        self.solution_dataset[0] = to_cpu(SolutionVector.data)
         self.timestamps_dataset[0] = 0.0
         self.hdf5_file.flush()
 
@@ -129,8 +132,8 @@ class Output:
         self.solution_dataset.resize((self.dump_no + 1,) + SolutionVector.data.shape)
         self.timestamps_dataset.resize((self.dump_no + 1,))
 
-        # Append new data
-        self.solution_dataset[self.dump_no] = SolutionVector.data
+        # Append new data (convert to CPU for I/O)
+        self.solution_dataset[self.dump_no] = to_cpu(SolutionVector.data)
         self.timestamps_dataset[self.dump_no] = (
             time if time is not None else self.dump_no
         )
@@ -179,14 +182,15 @@ class NPYOutput:
         with open(self.save_dir + "/config.json", "w") as file:
             json.dump(Parameters.config, file)
 
-        np.save(self.save_dir + "/initial_condition.npy", Parameters.initial_condition)
+        # Convert to CPU before saving
+        np.save(self.save_dir + "/initial_condition.npy", to_cpu(Parameters.initial_condition))
         np.save(self.save_dir + "/X.npy", Parameters.mesh_grid[0])
         np.save(self.save_dir + "/Y.npy", Parameters.mesh_grid[1])
         np.save(self.save_dir + "/Z.npy", Parameters.mesh_grid[2])
 
         if Parameters.source_data is not None:
             np.save(
-                self.save_dir + "/source_function_field.npy", Parameters.source_data
+                self.save_dir + "/source_function_field.npy", to_cpu(Parameters.source_data)
             )
 
     def dump(self, SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
@@ -199,7 +203,8 @@ class NPYOutput:
         """
         file_name = self.save_dir + "/gawain_output_" + str(self.dump_no) + ".npy"
         self.dump_no += 1
-        np.save(file_name, SolutionVector.data)
+        # Convert to CPU before saving
+        np.save(file_name, to_cpu(SolutionVector.data))
 
 
 class Parameters:
@@ -258,9 +263,10 @@ class Parameters:
         )
 
         # Initial and boundary conditions
-        self.initial_condition = self.validated_config.initial_condition
-        self.source_data = self.validated_config.source
-        self.gravity_field = self.validated_config.gravity
+        # Convert to GPU if using GPU backend
+        self.initial_condition = to_gpu(self.validated_config.initial_condition) if self.validated_config.initial_condition is not None else None
+        self.source_data = to_gpu(self.validated_config.source) if self.validated_config.source is not None else None
+        self.gravity_field = to_gpu(self.validated_config.gravity) if self.validated_config.gravity is not None else None
 
         # Convert boundary types from enum to string list
         self.boundary_type = [bt.value for bt in self.validated_config.boundary_type]
@@ -310,6 +316,7 @@ class Parameters:
             "fluxer": self.fluxer_type,
             "output_dir": self.output_dir,
             "with_mhd": self.with_mhd,
+            "backend": BACKEND,
         }
 
     def create_integrator(self) -> integrator.Integrator:
@@ -353,6 +360,7 @@ class Parameters:
 
     def print_params(self) -> None:
         print("run name: ", self.run_name)
+        print("backend: ", BACKEND.upper())
         print("clf condition =", self.cfl)
         print("nx, ny, nz =", self.mesh_shape)
         print("lx, ly, lz =", self.mesh_size)

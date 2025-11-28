@@ -26,24 +26,24 @@ pip install -e .
 
 ## Examples
 
-A few example simulation scripts and jupyter notebooks can be found in the 'docs' directory. The notebooks provide a detailed how-to on creating and running a simulation.
-
-To run a simulation, one can either use a jupyter notebook or a python script. The simulation parameters are be created, grouped into a python dict, and passed to the `run_gawain` function. See an example below, or check out the docs directory for more examples
+A few example simulation scripts and jupyter notebooks can be found in the 'examples' directory. The notebooks provide a detailed how-to on creating and running a simulation. To run a simulation, one can either use a jupyter notebook or a python script. The simulation parameters are be created, grouped into a python dict, and passed to the `run_gawain` function. See an example below, or check out the examples directory for more test cases
 
  ```python
 import numpy as np
+
 from gawain.main import run_gawain
 
 run_name = "sod_shock_tube"
-output_dir = "."
+output_dir = "runs"
 
-cfl = 0.5
+cfl = 0.25
 with_mhd = False
+with_thermal_conductivity = False
+with_resistivity = False
 
 t_max = 0.25
 
 integrator = "euler"
-# "base", "lax-wendroff", "lax-friedrichs", "vanleer", "hll"
 fluxer = "hll"
 
 ################ MESH #####################
@@ -80,7 +80,7 @@ e = pressure / (adiabatic_idx - 1) + 0.5 * mx * mx / rho
 initial_condition = np.array([rho, mx, my, mz, e])
 
 ############## BOUNDARY CONDITION ######################
-# available types: periodic, fixed, outflow, reflective
+# available types: periodic, fixed
 boundary_conditions = ["fixed", "periodic", "periodic"]
 
 ############## DO NOT EDIT BELOW ############################
@@ -104,3 +104,33 @@ config = {
 run_gawain(config)
  ```
 
+# GPU Support
+
+GAWAIN now supports GPU acceleration through CuPy, which provides a NumPy-compatible interface for GPU computing. The implementation uses a backend abstraction layer that allows seamless switching between CPU (NumPy) and GPU (CuPy) execution without code changes.
+
+## Installation
+
+To install GAWAIN with GPU support, use the following command:
+
+```bash
+pip install -e .[gpu]
+```
+and set the environment variable `GAWAIN_USE_GPU=1` before running your simulations. If a valid GPU setup is detected, GAWAIN will automatically utilize the GPU for computations.
+
+## AMD GPU Support
+
+AMD GPUs are supported through the ROCm platform. Ensure that you have ROCm installed and configured correctly on your system. To install CuPy with ROCm support, set the environment variables and install via a pip install, then install GAWAIN with as standard support:
+
+```bash
+export CUPY_INSTALL_USE_HIP=1
+export ROCM_HOME=/opt/rocm-6.4.1
+export HCC_AMDGPU_TARGET=gfx942
+pip install cupy
+pip install -e .
+```
+
+You can check cupy has installed successfully by running:
+
+```bash
+python -c "import cupy; cupy.show_config()"
+```
