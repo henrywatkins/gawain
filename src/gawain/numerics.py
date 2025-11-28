@@ -44,7 +44,9 @@ class Clock:
         self.output_spacing = self.end_time / Parameters.n_outputs
         self.next_output_time = self.output_spacing
         self.bar = tqdm(
-            total=self.end_time  , bar_format='{l_bar}{bar}| {n:.3f}/{total_fmt} [{elapsed}<{remaining}]')
+            total=self.end_time,
+            bar_format="{l_bar}{bar}| {n:.3f}/{total_fmt} [{elapsed}<{remaining}]",
+        )
         self.wallclock_start = time.process_time()
 
     def is_end(self) -> bool:
@@ -177,9 +179,15 @@ class SolutionVector:
         min_wave_speed_x, max_wave_speed_x = self.calculate_min_max_wave_speeds(0)
         min_wave_speed_y, max_wave_speed_y = self.calculate_min_max_wave_speeds(1)
         min_wave_speed_z, max_wave_speed_z = self.calculate_min_max_wave_speeds(2)
-        max_in_x = max(float(xp.abs(min_wave_speed_x).max()), float(xp.abs(max_wave_speed_x).max()))
-        max_in_y = max(float(xp.abs(min_wave_speed_y).max()), float(xp.abs(max_wave_speed_y).max()))
-        max_in_z = max(float(xp.abs(min_wave_speed_z).max()), float(xp.abs(max_wave_speed_z).max()))
+        max_in_x = max(
+            float(xp.abs(min_wave_speed_x).max()), float(xp.abs(max_wave_speed_x).max())
+        )
+        max_in_y = max(
+            float(xp.abs(min_wave_speed_y).max()), float(xp.abs(max_wave_speed_y).max())
+        )
+        max_in_z = max(
+            float(xp.abs(min_wave_speed_z).max()), float(xp.abs(max_wave_speed_z).max())
+        )
         timestep_x = self.cfl * self.dx / max_in_x
         timestep_y = self.cfl * self.dy / max_in_y
         timestep_z = self.cfl * self.dz / max_in_z

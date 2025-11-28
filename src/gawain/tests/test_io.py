@@ -6,8 +6,12 @@ import tempfile
 import numpy as np
 import pytest
 
-from gawain.fluxes import (FluxCalculator, HLLFluxer, LaxFriedrichsFluxer,
-                           LaxWendroffFluxer)
+from gawain.fluxes import (
+    FluxCalculator,
+    HLLFluxer,
+    LaxFriedrichsFluxer,
+    LaxWendroffFluxer,
+)
 from gawain.integrators import Integrator
 from gawain.io import Output, Parameters, Reader
 from gawain.numerics import MHDSolutionVector, SolutionVector

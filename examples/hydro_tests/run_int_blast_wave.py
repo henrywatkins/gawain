@@ -14,9 +14,8 @@ with_mhd = False
 
 t_max = 0.04
 
-# "euler", "rk2", "leapfrog", "predictor-corrector"
+
 integrator = "euler"
-# "base", "lax-wendroff", "lax-friedrichs", "hll"
 fluxer = "hll"
 
 ################ MESH #####################

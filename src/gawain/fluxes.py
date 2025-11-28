@@ -302,7 +302,6 @@ class LaxWendroffFluxer(FluxCalculator):
 
         fluxes = []
         for i in range(3):
-
             mid_flux = self.flux_function(u, i)
 
             uplus = u.get_neighbour_state(i, 1)

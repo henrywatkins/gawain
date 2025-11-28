@@ -3,8 +3,13 @@ import time
 import numpy as np
 import pytest
 
-from gawain.numerics import (BoundarySetter, Clock, GravitySource,
-                             MHDSolutionVector, SolutionVector)
+from gawain.numerics import (
+    BoundarySetter,
+    Clock,
+    GravitySource,
+    MHDSolutionVector,
+    SolutionVector,
+)
 
 
 class MockParameters:

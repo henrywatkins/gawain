@@ -38,8 +38,6 @@ output_dir = "runs"
 
 cfl = 0.25
 with_mhd = False
-with_thermal_conductivity = False
-with_resistivity = False
 
 t_max = 0.25
 
@@ -104,6 +102,12 @@ config = {
 run_gawain(config)
  ```
 
+## Setting up a problem
+
+To set up a problem, you need to define the mesh, initial conditions, boundary conditions, and simulation parameters. The mesh is defined by its shape and size, while the initial conditions are provided as a numpy array containing the relevant physical quantities (e.g., density, momentum components, energy). Boundary conditions can be specified as a list of strings corresponding to each spatial dimension. You also need to set the simulation parameters such as the CFL number, maximum simulation time, number of output dumps, adiabatic index, integrator type, and flux calculation method. All of these settings are then grouped into a configuration dictionary that is passed to the `run_gawain` function to start the simulation.
+
+Options for integrators only includes "euler" at present, while flux calculation methods include "hll" (HLLF with minmod limiter), "lax-wendroff" and "lax-friedrichs". Boundary conditions can be "fixed", "reflective", "periodic" or "outflow".
+
 # GPU Support
 
 GAWAIN now supports GPU acceleration through CuPy, which provides a NumPy-compatible interface for GPU computing. The implementation uses a backend abstraction layer that allows seamless switching between CPU (NumPy) and GPU (CuPy) execution without code changes.
@@ -134,3 +138,7 @@ You can check cupy has installed successfully by running:
 ```bash
 python -c "import cupy; cupy.show_config()"
 ```
+
+# Visualizing results
+
+Output from the simulations are stored in hdf5 format. You can use the `h5py` package to read the output files. A simple visualization script using `matplotlib` is provided in the `examples` directory. Here you can find examples of the Reader and plotting utilities provided in the `gawain.io` module.

@@ -11,7 +11,7 @@ Examples:
     >>> # Use NumPy backend (default)
     >>> from gawain.backend import xp
     >>> arr = xp.ones((10, 10))
-    
+
     >>> # Use CuPy backend
     >>> import os
     >>> os.environ["GAWAIN_USE_GPU"] = "1"
@@ -48,20 +48,20 @@ else:
 
 def to_cpu(array: Any) -> Any:
     """Convert array to CPU (NumPy) if needed
-    
+
     This function handles the transfer of data from GPU to CPU memory.
     If the array is already on CPU (NumPy), it returns the array unchanged.
-    
+
     Parameters
     ----------
     array : array-like
         Input array that may be on GPU or CPU
-        
+
     Returns
     -------
     numpy.ndarray
         Array guaranteed to be on CPU (NumPy array)
-        
+
     Examples
     --------
     >>> import numpy as np
@@ -76,20 +76,20 @@ def to_cpu(array: Any) -> Any:
 
 def to_gpu(array: Any) -> Any:
     """Convert array to GPU (CuPy) if GPU backend is enabled
-    
+
     This function handles the transfer of data from CPU to GPU memory.
     If GPU backend is not enabled, it returns the array unchanged.
-    
+
     Parameters
     ----------
     array : array-like
         Input array to be transferred to GPU
-        
+
     Returns
     -------
     array-like
         Array on GPU if GPU backend is enabled, otherwise unchanged
-        
+
     Examples
     --------
     >>> import numpy as np
@@ -103,11 +103,11 @@ def to_gpu(array: Any) -> Any:
 
 def synchronize() -> None:
     """Synchronize GPU operations
-    
+
     This function ensures all GPU operations have completed before
     proceeding. This is important before timing operations or when
     CPU needs to access GPU data.
-    
+
     Examples
     --------
     >>> from gawain.backend import xp, synchronize
@@ -121,17 +121,17 @@ def synchronize() -> None:
 
 def get_array_module(array: Any):
     """Get the appropriate array module (numpy or cupy) for an array
-    
+
     Parameters
     ----------
     array : array-like
         Input array
-        
+
     Returns
     -------
     module
         The numpy or cupy module appropriate for the array
-        
+
     Examples
     --------
     >>> import numpy as np
@@ -146,7 +146,7 @@ def get_array_module(array: Any):
 
 def get_backend_info() -> dict:
     """Get information about the current backend
-    
+
     Returns
     -------
     dict
@@ -154,7 +154,7 @@ def get_backend_info() -> dict:
         - backend: "numpy" or "cupy"
         - device: Device information if using GPU
         - version: Backend version string
-        
+
     Examples
     --------
     >>> info = get_backend_info()
@@ -166,7 +166,11 @@ def get_backend_info() -> dict:
         try:
             device = xp.cuda.Device()
             info["device"] = device.id
-            info["device_name"] = device.name.decode() if hasattr(device.name, 'decode') else str(device.name)
+            info["device_name"] = (
+                device.name.decode()
+                if hasattr(device.name, "decode")
+                else str(device.name)
+            )
             info["memory_pool"] = xp.get_default_memory_pool().used_bytes() / (1024**3)
         except Exception:
             info["device"] = "Unknown"

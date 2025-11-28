@@ -9,6 +9,7 @@ runs/
 *.npz
 *.npy
 .venv
+.ruff_cache/
 .pytest_cache/
 # ipynb checkpoints
 example_scripts/.ipynb_checkpoints/

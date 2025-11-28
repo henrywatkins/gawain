@@ -12,9 +12,7 @@ with_mhd = False
 
 t_max = 5.0
 
-# "euler",
 integrator = "euler"
-# "base", "lax-wendroff", "lax-friedrichs", "hll"
 fluxer = "hll"
 
 ################ MESH #####################

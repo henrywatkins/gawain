@@ -26,18 +26,17 @@ Simulation parameters:
 
 
 def run_gawain(config: Dict[str, Any]) -> None:
-
     print(PREAMBLE)
 
     params = io.Parameters(config)
-    
+
     # Print backend information
     backend_info = get_backend_info()
     if backend_info["backend"] == "cupy":
         print(f"GPU Backend: CuPy {backend_info['version']}")
         if "device_name" in backend_info:
             print(f"GPU Device: {backend_info['device_name']}")
-    
+
     if params.with_mhd:
         solution = nu.MHDSolutionVector()
     else:

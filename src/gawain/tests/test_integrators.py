@@ -3,8 +3,12 @@ import pytest
 
 from gawain.fluxes import FluxCalculator, HLLFluxer
 from gawain.integrators import Integrator
-from gawain.numerics import (BoundarySetter, GravitySource, MHDSolutionVector,
-                             SolutionVector)
+from gawain.numerics import (
+    BoundarySetter,
+    GravitySource,
+    MHDSolutionVector,
+    SolutionVector,
+)
 
 
 class MockParameters:

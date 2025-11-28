@@ -1,69 +1,69 @@
-"""test file for input"""
+"""Rayleigh-bernard instability script
+
+This script runs the hydrodynamic Rayleigh-Bernard
+instability test
+"""
 
 import numpy as np
+from scipy.constants import pi as PI
 
 from gawain.main import run_gawain
 
-run_name = "brio_wu_tube"
+run_name = "rayleigh_bernard"
 output_dir = "runs"
+cfl = 0.9
 
-cfl = 0.8
-with_mhd = True
-with_thermal_conductivity = False
-with_resistivity = False
+with_mhd = False
 
-t_max = 0.25
+t_max = 16.0
 
 integrator = "euler"
 fluxer = "hll"
 
 ################ MESH #####################
 
-nx, ny, nz = 800, 1, 1
+nx, ny, nz = 50, 150, 1
 
 mesh_shape = (nx, ny, nz)
 
 n_outputs = 100
 
-lx, ly, lz = 1.0, 0.001, 0.001
+lx, ly, lz = 0.5, 1.5, 0.001
 
 mesh_size = (lx, ly, lz)
 
-x = np.linspace(0.0, lx, num=nx)
-y = np.linspace(0.0, ly, num=ny)
+x = np.linspace(-lx / 2.0, lx / 2.0, num=nx)
+y = np.linspace(-ly / 2.0, ly / 2.0, num=ny)
 z = np.linspace(0.0, lz, num=nz)
 X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
 ############ INITIAL CONDITION #################
 
-adiabatic_idx = 2.0
+adiabatic_idx = 1.4
 
-rho = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.125])
+rho = np.piecewise(Y, [Y > 0, Y <= 0], [2.0, 1.0])
 
-pressure = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.1])
+g = 0.1
 
-mx = np.zeros(X.shape)
-my = mx
-mz = mx
-
-
-bx = 0.75 * np.ones_like(X)
-by = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, -1.0])
-bz = np.zeros(X.shape)
-
-mag_pressure = 0.5 * (bx**2 + by**2 + bz**2)
-
-e = (
-    pressure / (adiabatic_idx - 1)
-    + 0.5 * (mx * mx + my * my + mz * mz) / rho
-    + mag_pressure
+gravity_field = np.array(
+    [np.zeros(mesh_shape), g * np.ones(mesh_shape), np.zeros(mesh_shape)]
 )
 
-initial_condition = np.array([rho, mx, my, mz, e, bx, by, bz])
+P0 = 2.5 * np.ones(mesh_shape)
+
+pressure = P0 - g * rho * Y
+
+mx = np.zeros(mesh_shape)
+my = rho * 0.01 * 0.25 * (1.0 + np.cos(4 * PI * X)) * (1.0 + np.cos(3 * PI * Y))
+mz = np.zeros(mesh_shape)
+
+e = pressure / (adiabatic_idx - 1.0) + 0.5 * (mx**2 + my**2 + mz**2) / rho
+
+initial_condition = np.array([rho, mx, my, mz, e])
 
 ############## BOUNDARY CONDITION ######################
 # available types: periodic, fixed
-boundary_conditions = ["fixed", "periodic", "periodic"]
+boundary_conditions = ["periodic", "reflective", "periodic"]
 
 ############## DO NOT EDIT BELOW ############################
 config = {
@@ -80,6 +80,7 @@ config = {
     "integrator": integrator,
     "fluxer": fluxer,
     "output_dir": output_dir,
+    "gravity": gravity_field,
     "with_mhd": with_mhd,
 }
 

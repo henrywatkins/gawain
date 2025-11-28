@@ -33,6 +33,7 @@ class BoundaryType(str, Enum):
     PERIODIC = "periodic"
     FIXED = "fixed"
     REFLECTIVE = "reflective"
+    OUTFLOW = "outflow"
 
 
 class SimulationConfig(BaseModel):

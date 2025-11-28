@@ -183,14 +183,18 @@ class NPYOutput:
             json.dump(Parameters.config, file)
 
         # Convert to CPU before saving
-        np.save(self.save_dir + "/initial_condition.npy", to_cpu(Parameters.initial_condition))
+        np.save(
+            self.save_dir + "/initial_condition.npy",
+            to_cpu(Parameters.initial_condition),
+        )
         np.save(self.save_dir + "/X.npy", Parameters.mesh_grid[0])
         np.save(self.save_dir + "/Y.npy", Parameters.mesh_grid[1])
         np.save(self.save_dir + "/Z.npy", Parameters.mesh_grid[2])
 
         if Parameters.source_data is not None:
             np.save(
-                self.save_dir + "/source_function_field.npy", to_cpu(Parameters.source_data)
+                self.save_dir + "/source_function_field.npy",
+                to_cpu(Parameters.source_data),
             )
 
     def dump(self, SolutionVector: "Union[SolutionVector, MHDSolutionVector]") -> None:
@@ -264,9 +268,21 @@ class Parameters:
 
         # Initial and boundary conditions
         # Convert to GPU if using GPU backend
-        self.initial_condition = to_gpu(self.validated_config.initial_condition) if self.validated_config.initial_condition is not None else None
-        self.source_data = to_gpu(self.validated_config.source) if self.validated_config.source is not None else None
-        self.gravity_field = to_gpu(self.validated_config.gravity) if self.validated_config.gravity is not None else None
+        self.initial_condition = (
+            to_gpu(self.validated_config.initial_condition)
+            if self.validated_config.initial_condition is not None
+            else None
+        )
+        self.source_data = (
+            to_gpu(self.validated_config.source)
+            if self.validated_config.source is not None
+            else None
+        )
+        self.gravity_field = (
+            to_gpu(self.validated_config.gravity)
+            if self.validated_config.gravity is not None
+            else None
+        )
 
         # Convert boundary types from enum to string list
         self.boundary_type = [bt.value for bt in self.validated_config.boundary_type]

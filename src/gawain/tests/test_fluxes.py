@@ -1,8 +1,14 @@
 import numpy as np
 import pytest
 
-from gawain.fluxes import (EulerFlux, FluxCalculator, HLLFluxer,
-                           LaxFriedrichsFluxer, LaxWendroffFluxer, MHDFlux)
+from gawain.fluxes import (
+    EulerFlux,
+    FluxCalculator,
+    HLLFluxer,
+    LaxFriedrichsFluxer,
+    LaxWendroffFluxer,
+    MHDFlux,
+)
 from gawain.numerics import BoundarySetter, MHDSolutionVector, SolutionVector
 
 
