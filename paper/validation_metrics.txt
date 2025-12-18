@@ -1,0 +1,18 @@
+VALIDATION METRICS FOR JOSS PAPER
+============================================================
+
+Sod Shock Tube (t=0.2, 400 cells, HLL solver):
+  Density  - L1 error: nan, L2 error: nan
+  Velocity - L1 error: 0.903939, L2 error: 1.209560
+  Pressure - L1 error: nan, L2 error: nan
+  Runtime: 1.92 seconds
+
+Brio-Wu MHD Shock Tube (t=0.1, 800 cells, HLL solver):
+  Runtime: 7.38 seconds
+
+Performance Benchmarks (NumPy backend, t=0.1, HLL solver):
+Resolution   Cells      Runtime (s)     Steps/sec   
+------------------------------------------------------------
+64²          4096       2.58            12.4        
+128²         16384      9.98            6.4         
+256²         65536      82.50           1.6         
