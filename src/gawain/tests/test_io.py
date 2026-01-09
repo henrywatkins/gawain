@@ -17,6 +17,32 @@ from gawain.io import Output, Parameters, Reader
 from gawain.numerics import MHDSolutionVector, SolutionVector
 
 
+def create_valid_hydro_initial_condition(mesh_shape, adi_idx=1.4):
+    """Helper to create physically valid hydro initial conditions"""
+    rho = np.ones(mesh_shape)
+    pressure = np.ones(mesh_shape) * 0.1
+    mx = np.zeros(mesh_shape)
+    my = np.zeros(mesh_shape)
+    mz = np.zeros(mesh_shape)
+    e = pressure / (adi_idx - 1) + 0.5 * (mx**2 + my**2 + mz**2) / rho
+    return np.array([rho, mx, my, mz, e])
+
+
+def create_valid_mhd_initial_condition(mesh_shape, adi_idx=1.4):
+    """Helper to create physically valid MHD initial conditions"""
+    rho = np.ones(mesh_shape)
+    pressure = np.ones(mesh_shape) * 0.1
+    mx = np.zeros(mesh_shape)
+    my = np.zeros(mesh_shape)
+    mz = np.zeros(mesh_shape)
+    bx = np.ones(mesh_shape) * 0.01
+    by = np.zeros(mesh_shape)
+    bz = np.zeros(mesh_shape)
+    mag_pressure = 0.5 * (bx**2 + by**2 + bz**2)
+    e = pressure / (adi_idx - 1) + 0.5 * (mx**2 + my**2 + mz**2) / rho + mag_pressure
+    return np.array([rho, mx, my, mz, e, bx, by, bz])
+
+
 class MockFileHandle:
     """Mock file handle for testing file operations"""
 
@@ -84,16 +110,21 @@ def sample_config():
     z = np.linspace(0, 0.6, 6)
     X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+    # Create physically valid initial conditions
+    mesh_shape = (10, 8, 6)
+    adi_idx = 1.4
+    initial_condition = create_valid_hydro_initial_condition(mesh_shape, adi_idx)
+
     config = {
         "run_name": "test_run",
         "cfl": 0.5,
-        "mesh_shape": (10, 8, 6),
+        "mesh_shape": mesh_shape,
         "mesh_size": (1.0, 0.8, 0.6),
         "mesh_grid": (X, Y, Z),
         "t_max": 1.0,
         "n_dumps": 5,
-        "adi_idx": 1.4,
-        "initial_condition": np.ones((5, 10, 8, 6)),
+        "adi_idx": adi_idx,
+        "initial_condition": initial_condition,
         "boundary_type": ["periodic", "periodic", "periodic"],
         "output_dir": ".",
         "with_mhd": False,
@@ -112,16 +143,21 @@ def sample_mhd_config():
     z = np.linspace(0, 0.6, 6)
     X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+    # Create physically valid MHD initial conditions
+    mesh_shape = (10, 8, 6)
+    adi_idx = 1.4
+    initial_condition = create_valid_mhd_initial_condition(mesh_shape, adi_idx)
+
     config = {
         "run_name": "test_mhd_run",
         "cfl": 0.5,
-        "mesh_shape": (10, 8, 6),
+        "mesh_shape": mesh_shape,
         "mesh_size": (1.0, 0.8, 0.6),
         "mesh_grid": (X, Y, Z),
         "t_max": 1.0,
         "n_dumps": 5,
-        "adi_idx": 1.4,
-        "initial_condition": np.ones((8, 10, 8, 6)),
+        "adi_idx": adi_idx,
+        "initial_condition": initial_condition,
         "boundary_type": ["periodic", "periodic", "periodic"],
         "output_dir": ".",
         "with_mhd": True,
@@ -187,16 +223,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_fixed",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["fixed", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -219,16 +256,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_source",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -250,16 +288,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_gravity",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -283,10 +322,10 @@ class TestParameters:
     def test_create_integrator_invalid(self, sample_config):
         """Test creating integrator with invalid type"""
         sample_config["integrator"] = "invalid_integrator"
-        params = Parameters(sample_config)
 
-        with pytest.raises(KeyError):
-            params.create_integrator()
+        # Should raise ValueError during Parameters construction due to validation
+        with pytest.raises(ValueError, match="Configuration validation failed"):
+            params = Parameters(sample_config)
 
     def test_create_fluxer_base(self, sample_config):
         """Test creating base flux calculator"""
@@ -307,10 +346,10 @@ class TestParameters:
     def test_create_fluxer_invalid(self, sample_config):
         """Test creating fluxer with invalid type"""
         sample_config["fluxer"] = "invalid_fluxer"
-        params = Parameters(sample_config)
 
-        with pytest.raises(KeyError):
-            params.create_fluxer()
+        # Should raise ValueError during Parameters construction due to validation
+        with pytest.raises(ValueError, match="Configuration validation failed"):
+            params = Parameters(sample_config)
 
     def test_create_source_none(self, sample_config):
         """Test creating source when none specified"""
@@ -328,16 +367,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_source",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -362,16 +402,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_source",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -380,10 +421,9 @@ class TestParameters:
             "source": np.ones((3, 5, 5, 5)),  # Wrong shape
         }
 
-        params = Parameters(config)
-
-        with pytest.raises(TypeError):
-            params.create_source()
+        # Should raise ValueError during Parameters construction due to validation
+        with pytest.raises(ValueError, match="Configuration validation failed"):
+            params = Parameters(config)
 
     def test_create_gravity_none(self, sample_config):
         """Test creating gravity when none specified"""
@@ -400,16 +440,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_gravity",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -434,16 +475,17 @@ class TestParameters:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_gravity",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": ".",
             "with_mhd": False,
@@ -452,10 +494,9 @@ class TestParameters:
             "gravity": np.zeros((2, 5, 5, 5)),  # Wrong shape
         }
 
-        params = Parameters(config)
-
-        with pytest.raises(TypeError):
-            params.create_gravity()
+        # Should raise ValueError during Parameters construction due to validation
+        with pytest.raises(ValueError, match="Configuration validation failed"):
+            params = Parameters(config)
 
 
 class TestOutput:
@@ -540,16 +581,17 @@ class TestOutput:
         z = np.linspace(0, 0.6, 6)
         X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
 
+        mesh_shape = (10, 8, 6)
         config = {
             "run_name": "test_source",
             "cfl": 0.5,
-            "mesh_shape": (10, 8, 6),
+            "mesh_shape": mesh_shape,
             "mesh_size": (1.0, 0.8, 0.6),
             "mesh_grid": (X, Y, Z),
             "t_max": 1.0,
             "n_dumps": 5,
             "adi_idx": 1.4,
-            "initial_condition": np.ones((5, 10, 8, 6)),
+            "initial_condition": create_valid_hydro_initial_condition(mesh_shape),
             "boundary_type": ["periodic", "periodic", "periodic"],
             "output_dir": temp_dir,
             "with_mhd": False,
