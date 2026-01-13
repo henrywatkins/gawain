@@ -117,7 +117,7 @@ Configuration validation using Pydantic [@pydantic] ensures type safety and catc
 - **Source terms**: Support for gravitational fields and arbitrary source functions
 
 ### Development and Testing
-- **Examples**: Extensive test suite including Sod shock tube, Brio-Wu shock, Orszag-Tang vortex, blast waves, and Rayleigh-Taylor instability
+- **Examples**: 13 validated test cases including Sod shock tube, Brio-Wu shock, Orszag-Tang vortex, Sedov blast wave, Rayleigh-Taylor instability, Kelvin-Helmholtz instability, MHD rotor, Alfvén waves, and current sheet instabilities
 - **Jupyter integration**: Example notebooks demonstrating simulation setup and visualization
 - **Test coverage**: Unit tests for all core components (numerics, fluxes, I/O, validation)
 
@@ -192,13 +192,27 @@ Performance benchmarks (\autoref{tab:performance}) were conducted on an Intel i7
 
 | Resolution | Grid Cells | Runtime (s) | Timesteps/sec |
 |:-----------|:-----------|:------------|:--------------|
-| $64^2$     | 4,096      | 2.6         | 12.4          |
-| $128^2$    | 16,384     | 10.0        | 6.4           |
-| $256^2$    | 65,536     | 82.5        | 1.6           |
+| $64^2$     | 4,096      | 2.58        | 12.4          |
+| $128^2$    | 16,384     | 9.98        | 6.4           |
+| $256^2$    | 65,536     | 82.50       | 1.6           |
 
 : Performance benchmarks for 2D hydrodynamics (t=0.1, HLL solver) on NumPy backend. \label{tab:performance}
 
-GPU acceleration with CuPy provides 5-10× speedup for typical problems, with larger gains at higher resolutions where computation dominates data transfer overhead. The modular architecture allows users to extend functionality through subclassing (e.g., implementing new flux schemes) or adding custom source terms. The test suite (`pytest`-based) ensures modifications maintain correctness.
+GPU acceleration with CuPy provides significant speedup for typical problems on CUDA-compatible hardware, with gains increasing at higher resolutions where computation dominates data transfer overhead. The modular architecture allows users to extend functionality through subclassing (e.g., implementing new flux schemes) or adding custom source terms. The test suite (`pytest`-based) ensures modifications maintain correctness.
+
+# Research Impact and Community
+
+Gawain has been developed over six years (2019-2025) as an educational platform for computational MHD. The package demonstrates research software maturity through comprehensive validation against standard test problems. The validation suite includes 13 test cases spanning canonical hydrodynamics problems (Sod shock tube [@sod1978survey], Sedov blast wave, Rayleigh-Taylor instability, Kelvin-Helmholtz instability) and MHD benchmarks (Brio-Wu shock [@brio1988upwind], Orszag-Tang vortex [@orszag1979small], MHD rotor, Alfvén waves, current sheet instabilities, 3D blast waves). These tests confirm correct implementation across multiple physical regimes and dimensionalities.
+
+The package targets graduate students learning computational plasma physics, researchers prototyping numerical methods, and educators teaching MHD in computational physics courses. Gawain's design prioritizes rapid onboarding: new users can configure and run their first simulation within 10 minutes following the example scripts. The comprehensive documentation ecosystem includes:
+
+- README with installation instructions and quick-start guide
+- 13 validated example simulation scripts demonstrating various physical scenarios
+- Jupyter notebooks for interactive exploration and visualization
+- Pytest-based test suite covering numerics, flux calculations, I/O, and configuration validation
+- Type-safe configuration via Pydantic, providing informative error messages for invalid inputs
+
+Users can report issues, request features, and contribute code via the GitHub repository. The codebase employs standard Python development tools (black for formatting, isort for import organization, pytest for testing) to facilitate external contributions. The modular architecture with clear separation between physics (flux calculations), numerics (time integration), and I/O components enables researchers to extend functionality by implementing new flux schemes, boundary conditions, or source terms through straightforward subclassing.
 
 # Limitations
 
@@ -211,6 +225,10 @@ Gawain is designed for educational and small-to-medium research applications, no
 - **First/second order methods**: Higher-order WENO or spectral methods not implemented
 
 For problems requiring $>10^9$ cells, production codes like ATHENA++ [@stone2020athena] or PLUTO [@mignone2007pluto] are more appropriate. Gawain's strength lies in rapid prototyping, educational accessibility, and GPU-accelerated workstation-scale simulations.
+
+# Generative AI Disclosure
+
+Generative AI tools (including large language models such as Claude and GitHub Copilot) were used to assist with code development (including docstrings, comments, and implementation suggestions) and paper preparation (including text drafting and editing). All AI-generated content was thoroughly reviewed, edited, and validated by the human author. The author takes full responsibility for the accuracy, originality, and compliance with all licensing and ethical standards of the final software and manuscript.
 
 # Acknowledgments
 
