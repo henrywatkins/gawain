@@ -7,14 +7,13 @@ runs/
 # data files
 *.h5
 *.npz
+.github
 *.npy
 .venv
+.claude
 .ruff_cache/
 .pytest_cache/
 # ipynb checkpoints
 example_scripts/.ipynb_checkpoints/
 gawain/.ipynb_checkpoints/
 .ipynb_checkpoints
-paper/
-install_amd_gpu.txt
-.github/
