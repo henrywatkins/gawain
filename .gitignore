@@ -7,7 +7,6 @@ runs/
 # data files
 *.h5
 *.npz
-.github
 *.npy
 .venv
 .claude
