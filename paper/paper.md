@@ -189,7 +189,7 @@ GPU acceleration with CuPy provides significant speedup for typical problems on 
 
 # Generative AI Disclosure
 
-Generative AI tools were used to assist with code development and draft paper preparation, primarily using Claude Sonnet 4.5 via github Copilot. All AI-generated content was thoroughly reviewed, edited, and validated by the human author. The author takes full responsibility for the accuracy, originality, and compliance with all licensing and ethical standards of the final software and manuscript.
+Generative AI tools were used to assist with code development and draft paper preparation, primarily using Claude Sonnet 4.5 via github Copilot. Claude code was also used for testing and code review. All AI-generated content was thoroughly reviewed, edited, and validated by the human author. The author takes full responsibility for the accuracy, originality, and compliance with all licensing and ethical standards of the final software and manuscript.
 
 # Acknowledgments
 
