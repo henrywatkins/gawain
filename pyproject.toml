@@ -1,6 +1,6 @@
 [project]
 name = "gawain"
-version = "0.1.0"
+version = "1.0.0"
 description = "A 2D magnetohydrodynamic simulation code written in python."
 readme = "README.md"
 requires-python = ">=3.12.4"
