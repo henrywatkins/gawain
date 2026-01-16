@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.24">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2025-12-18">
+
+<title>Gawain: A Python package for 2D/3D magnetohydrodynamics simulations</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="paper_files/libs/clipboard/clipboard.min.js"></script>
+<script src="paper_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="paper_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="paper_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="paper_files/libs/quarto-html/popper.min.js"></script>
+<script src="paper_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="paper_files/libs/quarto-html/anchor.min.js"></script>
+<link href="paper_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="paper_files/libs/quarto-html/quarto-syntax-highlighting-dc55a5b9e770e841cd82e46aadbfb9b0.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="paper_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="paper_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="paper_files/libs/bootstrap/bootstrap-9fe7c06ee3bcc58acdd6a0b39a77e0d8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Gawain: A Python package for 2D/3D magnetohydrodynamics simulations</h1>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliations</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Henry Watkins <a href="https://orcid.org/0000-0001-6330-6195" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            1
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">December 18, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="summary" class="level1">
+<h1>Summary</h1>
+<p>Gawain is a Python package for solving the equations of magnetohydrodynamics (MHD) in two and three spatial dimensions. The package provides a flexible framework for simulating inviscid, compressible hydrodynamics and ideal MHD using finite volume methods with various flux calculation schemes. Gawain is designed with simplicity and accessibility in mind, featuring a straightforward configuration-based interface that allows users to set up and run simulations with minimal code. The package supports both CPU (NumPy) and GPU (CuPy) backends, enabling acceleration of computationally intensive simulations on modern hardware. With comprehensive Pydantic-based validation, multiple boundary condition types, and support for external forces and source terms, Gawain serves as both an educational tool for learning computational MHD and a research platform for exploring plasma physics phenomena.</p>
+</section>
+<section id="statement-of-need" class="level1">
+<h1>Statement of Need</h1>
+<p>Magnetohydrodynamics describes the behavior of electrically conducting fluids in the presence of magnetic fields, with applications spanning solar physics, astrophysical jets, accretion disks, fusion plasma confinement, and space weather modeling <span class="citation" data-cites="priest2014magnetohydrodynamics goedbloed2019magnetohydrodynamics">(<a href="#ref-priest2014magnetohydrodynamics" role="doc-biblioref">Priest 2014</a>; <a href="#ref-goedbloed2019magnetohydrodynamics" role="doc-biblioref">Goedbloed, Keppens, and Poedts 2019</a>)</span>. While several mature MHD simulation codes exist—such as ATHENA++ <span class="citation" data-cites="stone2020athena">(<a href="#ref-stone2020athena" role="doc-biblioref">Stone et al. 2020</a>)</span>, PLUTO <span class="citation" data-cites="mignone2007pluto">(<a href="#ref-mignone2007pluto" role="doc-biblioref">Mignone et al. 2007</a>)</span>, and FLASH <span class="citation" data-cites="fryxell2000flash">(<a href="#ref-fryxell2000flash" role="doc-biblioref">Fryxell et al. 2000</a>)</span>—these production-level codes often present significant barriers to entry for students and researchers new to computational MHD. They typically require compilation, complex configuration files, and substantial investment in learning domain-specific workflows.</p>
+<p>Gawain addresses this gap by providing a Python-native MHD solver that prioritizes accessibility without sacrificing physical fidelity. The package leverages Python’s scientific computing ecosystem (NumPy, h5py, matplotlib) to offer an environment familiar to researchers already working with Python for data analysis. Unlike production codes optimized for massively parallel supercomputing, Gawain targets educational use cases, algorithm prototyping, and small-to-medium scale research problems that can run on workstations or cloud computing platforms.</p>
+<p>Key distinguishing features include:</p>
+<ol type="1">
+<li><strong>Configuration-based workflow</strong>: Simulations are configured using Python dictionaries with Pydantic validation, eliminating the need for custom configuration file formats</li>
+<li><strong>Transparent GPU acceleration</strong>: Optional GPU support via CuPy enables order-of-magnitude speedups with a single environment variable, without code modification</li>
+<li><strong>Interactive development</strong>: Integration with Jupyter notebooks supports iterative exploration and visualization during simulation development</li>
+<li><strong>Minimal dependencies</strong>: Core functionality requires only NumPy and h5py, reducing installation complexity</li>
+</ol>
+<p>The target audience includes graduate students learning computational plasma physics, researchers prototyping new numerical methods, and educators teaching MHD in computational physics courses. By lowering technical barriers, Gawain enables users to focus on physics rather than infrastructure.</p>
+</section>
+<section id="installation" class="level1">
+<h1>Installation</h1>
+<p>Gawain can be installed directly from the source repository:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/henrywatkins/gawain.git</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> gawain</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For GPU acceleration, install the optional CuPy dependency:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-e</span> <span class="st">".[gpu]"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The package requires Python ≥3.12 and has minimal core dependencies (NumPy, h5py, Pydantic, matplotlib). Installation typically completes in under 5 minutes on a standard workstation.</p>
+</section>
+<section id="governing-equations" class="level1">
+<h1>Governing Equations</h1>
+<p>Gawain solves the conservative form of the ideal MHD equations in Cartesian coordinates:</p>
+<p><span class="math display">\[
+\frac{\partial \mathbf{U}}{\partial t} + \nabla \cdot \mathbf{F}(\mathbf{U}) = \mathbf{S}
+\]</span></p>
+<p>where <span class="math inline">\(\mathbf{U}\)</span> is the state vector and <span class="math inline">\(\mathbf{F}\)</span> represents the flux tensors. For hydrodynamics, the state vector contains five conserved quantities:</p>
+<p><span class="math display">\[
+\mathbf{U}_{\text{hydro}} = \begin{pmatrix} \rho \\ \rho v_x \\ \rho v_y \\ \rho v_z \\ E \end{pmatrix}
+\]</span></p>
+<p>where <span class="math inline">\(\rho\)</span> is density, <span class="math inline">\(\mathbf{v} = (v_x, v_y, v_z)\)</span> is velocity, and <span class="math inline">\(E\)</span> is total energy density including kinetic and thermal components. For ideal MHD, the state vector is extended to include magnetic field components:</p>
+<p><span class="math display">\[
+\mathbf{U}_{\text{MHD}} = \begin{pmatrix} \rho \\ \rho v_x \\ \rho v_y \\ \rho v_z \\ E \\ B_x \\ B_y \\ B_z \end{pmatrix}
+\]</span></p>
+<p>The total energy includes magnetic pressure: <span class="math inline">\(E = \frac{p}{\gamma - 1} + \frac{1}{2}\rho|\mathbf{v}|^2 + \frac{1}{2}|\mathbf{B}|^2\)</span>, where <span class="math inline">\(\gamma\)</span> is the adiabatic index and <span class="math inline">\(p\)</span> is thermal pressure. The source term <span class="math inline">\(\mathbf{S}\)</span> can include gravitational forces or user-defined source functions.</p>
+</section>
+<section id="implementation" class="level1">
+<h1>Implementation</h1>
+<p>Gawain employs a finite volume method with explicit time integration. The spatial domain is discretized into a structured Cartesian grid, with conserved quantities stored at cell centers. Numerical fluxes at cell interfaces are computed using one of several Riemann solvers:</p>
+<ul>
+<li><strong>Base flux</strong>: Simple centered differencing (first-order accurate)</li>
+<li><strong>Lax-Friedrichs</strong>: Diffusive scheme with guaranteed stability</li>
+<li><strong>Lax-Wendroff</strong>: Second-order accurate predictor-corrector method<br>
+</li>
+<li><strong>HLL (Harten-Lax-van Leer)</strong>: Robust approximate Riemann solver <span class="citation" data-cites="harten1983upstream">(<a href="#ref-harten1983upstream" role="doc-biblioref">Harten, Lax, and Van Leer 1983</a>)</span></li>
+</ul>
+<p>Time integration uses forward Euler with adaptive timestep control via the Courant-Friedrichs-Lewy (CFL) condition, ensuring numerical stability. Boundary conditions are implemented through ghost cell methods, supporting periodic, fixed-value, reflective, and outflow boundaries.</p>
+<p>The code architecture separates physics (flux calculations), numerics (time integration), and I/O (HDF5 output). A key design feature is the backend abstraction layer that enables seamless switching between NumPy (CPU) and CuPy (GPU) array operations through a unified interface. This allows the entire codebase to benefit from GPU acceleration without GPU-specific code duplication.</p>
+<p>Configuration validation using Pydantic <span class="citation" data-cites="pydantic">(<a href="#ref-pydantic" role="doc-biblioref">Pydantic Contributors 2024</a>)</span> ensures type safety and catches common errors (e.g., CFL &gt; 1, invalid boundary condition combinations) before simulation execution. Output is written to HDF5 files <span class="citation" data-cites="hdf5">(<a href="#ref-hdf5" role="doc-biblioref">The HDF Group 2024</a>)</span> containing solution snapshots, grid coordinates, and metadata, facilitating post-processing with standard scientific Python tools.</p>
+<p>Gawain’s design prioritizes rapid onboarding: new users can configure and run their first simulation within 10 minutes following the example scripts.</p>
+</section>
+<section id="features" class="level1">
+<h1>Features</h1>
+<section id="simulation-capabilities" class="level3">
+<h3 class="anchored" data-anchor-id="simulation-capabilities">Simulation Capabilities</h3>
+<ul>
+<li><strong>Dimensionality</strong>: Supports 1D, 2D, and 3D simulations (lower dimensions implemented as degenerate 3D cases)</li>
+<li><strong>Physics</strong>: Inviscid compressible hydrodynamics and ideal MHD</li>
+<li><strong>Flux schemes</strong>: Base, Lax-Friedrichs, Lax-Wendroff, and HLL solvers</li>
+<li><strong>Time integration</strong>: Forward Euler with CFL-based adaptive timestepping</li>
+<li><strong>Boundary conditions</strong>: Periodic, fixed-value, reflective, and outflow (independently configurable per axis)</li>
+</ul>
+</section>
+<section id="computational-features" class="level3">
+<h3 class="anchored" data-anchor-id="computational-features">Computational Features</h3>
+<ul>
+<li><strong>GPU acceleration</strong>: Optional CuPy backend for CUDA-compatible GPUs (controlled via <code>GAWAIN_USE_GPU</code> environment variable)</li>
+<li><strong>Validation</strong>: Comprehensive Pydantic-based input validation with informative error messages</li>
+<li><strong>Output format</strong>: HDF5 files with configurable dump frequency</li>
+<li><strong>Source terms</strong>: Support for gravitational fields and arbitrary source functions</li>
+</ul>
+</section>
+<section id="development-and-testing" class="level3">
+<h3 class="anchored" data-anchor-id="development-and-testing">Development and Testing</h3>
+<ul>
+<li><strong>Examples</strong>: 13 validated test cases including Sod shock tube, Brio-Wu shock, Orszag-Tang vortex, Sedov blast wave, Rayleigh-Taylor instability, Kelvin-Helmholtz instability, MHD rotor, Alfvén waves, and current sheet instabilities</li>
+<li><strong>Jupyter integration</strong>: Example notebooks demonstrating simulation setup and visualization</li>
+<li><strong>Test coverage</strong>: Unit tests for all core components (numerics, fluxes, I/O, validation)</li>
+</ul>
+</section>
+</section>
+<section id="example-usage" class="level1">
+<h1>Example Usage</h1>
+<p>Gawain simulations are configured using Python dictionaries, making setup straightforward. The following example demonstrates a 1D Sod shock tube problem <span class="citation" data-cites="sod1978survey">(<a href="#ref-sod1978survey" role="doc-biblioref">Sod 1978</a>)</span>, a standard hydrodynamics test:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gawain.main <span class="im">import</span> run_gawain</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Mesh setup (1D simulation using 3D array with ny=nz=1)</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>nx, ny, nz <span class="op">=</span> <span class="dv">200</span>, <span class="dv">1</span>, <span class="dv">1</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>lx, ly, lz <span class="op">=</span> <span class="fl">1.0</span>, <span class="fl">0.001</span>, <span class="fl">0.001</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, lx, num<span class="op">=</span>nx)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, ly, num<span class="op">=</span>ny)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>z <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, lz, num<span class="op">=</span>nz)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>X, Y, Z <span class="op">=</span> np.meshgrid(x, y, z, indexing<span class="op">=</span><span class="st">"ij"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Initial conditions: discontinuity at x=0.5</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>rho <span class="op">=</span> np.piecewise(X, [X <span class="op">&lt;</span> <span class="fl">0.5</span>, X <span class="op">&gt;=</span> <span class="fl">0.5</span>], [<span class="fl">1.0</span>, <span class="fl">0.125</span>])</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>pressure <span class="op">=</span> np.piecewise(X, [X <span class="op">&lt;</span> <span class="fl">0.5</span>, X <span class="op">&gt;=</span> <span class="fl">0.5</span>], [<span class="fl">1.0</span>, <span class="fl">0.1</span>])</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>mx <span class="op">=</span> my <span class="op">=</span> mz <span class="op">=</span> np.zeros(X.shape)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Total energy (kinetic + thermal)</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>gamma <span class="op">=</span> <span class="fl">1.4</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>e <span class="op">=</span> pressure <span class="op">/</span> (gamma <span class="op">-</span> <span class="dv">1</span>) <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> mx<span class="op">**</span><span class="dv">2</span> <span class="op">/</span> rho</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>initial_condition <span class="op">=</span> np.array([rho, mx, my, mz, e])</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Configuration dictionary</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> {</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">"run_name"</span>: <span class="st">"sod_shock_tube"</span>,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">"cfl"</span>: <span class="fl">0.25</span>,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">"mesh_shape"</span>: (nx, ny, nz),</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"mesh_size"</span>: (lx, ly, lz),</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"mesh_grid"</span>: (X, Y, Z),</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">"t_max"</span>: <span class="fl">0.25</span>,</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">"n_dumps"</span>: <span class="dv">100</span>,</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">"initial_condition"</span>: initial_condition,</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">"boundary_type"</span>: [<span class="st">"fixed"</span>, <span class="st">"periodic"</span>, <span class="st">"periodic"</span>],</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    <span class="st">"adi_idx"</span>: gamma,</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="st">"integrator"</span>: <span class="st">"euler"</span>,</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="st">"fluxer"</span>: <span class="st">"hll"</span>,</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    <span class="st">"output_dir"</span>: <span class="st">"runs"</span>,</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    <span class="st">"with_mhd"</span>: <span class="va">False</span>,</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>run_gawain(config)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This produces an HDF5 file containing 100 snapshots of the evolving shock structure. For MHD simulations, users simply add magnetic field components to the initial condition array and set <code>with_mhd=True</code>. GPU acceleration requires only setting the environment variable <code>GAWAIN_USE_GPU=1</code> before execution—no code changes needed.</p>
+<p>The <code>examples/</code> directory contains additional test cases including 2D MHD problems (Orszag-Tang vortex, MHD rotor, current sheet instabilities) and 3D blast wave simulations, along with Jupyter notebooks demonstrating visualization workflows using matplotlib.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/sod_validation.png" class="img-fluid figure-img"></p>
+<figcaption>Sod shock tube results showing density, velocity, and pressure profiles at t=0.25. The simulation captures the shock, contact discontinuity, and rarefaction fan structure using 200 grid cells and the HLL flux solver.</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="figures/briowu_validation.png" class="img-fluid figure-img"></p>
+<figcaption>Brio-Wu MHD shock tube results at t=0.25 showing complex wave structure including fast and slow MHD shocks, contact discontinuity, and rarefaction waves. The simulation uses 800 grid cells and the HLL flux solver.</figcaption>
+</figure>
+</div>
+</section>
+<section id="validation-and-performance" class="level1">
+<h1>Validation and Performance</h1>
+<p>Gawain has been validated against standard test problems from the MHD literature. shows results from the Sod shock tube problem <span class="citation" data-cites="sod1978survey">(<a href="#ref-sod1978survey" role="doc-biblioref">Sod 1978</a>)</span>, a canonical test for hydrodynamics codes. The HLL flux solver accurately captures the shock, contact discontinuity, and rarefaction fan structure at t=0.25 using 200 grid cells. presents the Brio-Wu MHD shock tube <span class="citation" data-cites="brio1988upwind">(<a href="#ref-brio1988upwind" role="doc-biblioref">Brio and Wu 1988</a>)</span>, which tests the code’s ability to handle complex MHD wave interactions including fast/slow shocks and compound waves. The simulation demonstrates correct propagation of MHD discontinuities and wave structures at t=0.25 using 800 grid cells.</p>
+<p>The validation suite includes 13 test cases spanning canonical hydrodynamics problems (Sod shock tube <span class="citation" data-cites="sod1978survey">(<a href="#ref-sod1978survey" role="doc-biblioref">Sod 1978</a>)</span>, Sedov blast wave, Rayleigh-Taylor instability, Kelvin-Helmholtz instability) and MHD benchmarks (Brio-Wu shock <span class="citation" data-cites="brio1988upwind">(<a href="#ref-brio1988upwind" role="doc-biblioref">Brio and Wu 1988</a>)</span>, Orszag-Tang vortex <span class="citation" data-cites="orszag1979small">(<a href="#ref-orszag1979small" role="doc-biblioref">Orszag and Tang 1979</a>)</span>, MHD rotor, Alfvén waves, current sheet instabilities, 3D blast waves). These tests confirm correct implementation across multiple physical regimes and dimensionalities.</p>
+<p>GPU acceleration with CuPy provides significant speedup for typical problems on CUDA-compatible or AMD hardware, with gains increasing at higher resolutions where computation dominates data transfer overhead. The modular architecture allows users to extend functionality through subclassing (e.g., implementing new flux schemes) or adding custom source terms. The test suite (<code>pytest</code>-based) ensures modifications maintain correctness.</p>
+</section>
+<section id="generative-ai-disclosure" class="level1">
+<h1>Generative AI Disclosure</h1>
+<p>Generative AI tools were used to assist with code development and paper preparation. All AI-generated content was thoroughly reviewed, edited, and validated by the human author. The author takes full responsibility for the accuracy, originality, and compliance with all licensing and ethical standards of the final software and manuscript.</p>
+</section>
+<section id="acknowledgments" class="level1">
+<h1>Acknowledgments</h1>
+<p>We acknowledge contributions from the open-source Python scientific computing community, particularly the developers of NumPy, CuPy, h5py, and Pydantic, which form the foundation of Gawain’s implementation.</p>
+</section>
+<section id="references" class="level1 unnumbered">
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-brio1988upwind" class="csl-entry" role="listitem">
+Brio, Moysey, and CC Wu. 1988. <span>“An Upwind Differencing Scheme for the Equations of Ideal Magnetohydrodynamics.”</span> <em>Journal of Computational Physics</em> 75 (2): 400–422. <a href="https://doi.org/10.1016/0021-9991(88)90120-9">https://doi.org/10.1016/0021-9991(88)90120-9</a>.
+</div>
+<div id="ref-fryxell2000flash" class="csl-entry" role="listitem">
+Fryxell, Bruce, Kevin Olson, Paul Ricker, FX Timmes, Michael Zingale, Don Q Lamb, Peter MacNeice, Robert Rosner, James W Truran, and Henry Tufo. 2000. <span>“FLASH: An Adaptive Mesh Hydrodynamics Code for Modeling Astrophysical Thermonuclear Flashes.”</span> <em>The Astrophysical Journal Supplement Series</em> 131 (1): 273. <a href="https://doi.org/10.1086/317361">https://doi.org/10.1086/317361</a>.
+</div>
+<div id="ref-goedbloed2019magnetohydrodynamics" class="csl-entry" role="listitem">
+Goedbloed, Hans, Rony Keppens, and Stefaan Poedts. 2019. <em>Magnetohydrodynamics of Laboratory and Astrophysical Plasmas</em>. Cambridge University Press. <a href="https://doi.org/10.1017/9781316403679">https://doi.org/10.1017/9781316403679</a>.
+</div>
+<div id="ref-harten1983upstream" class="csl-entry" role="listitem">
+Harten, Amiram, Peter D Lax, and Bram Van Leer. 1983. <span>“On Upstream Differencing and Godunov-Type Schemes for Hyperbolic Conservation Laws.”</span> <em>SIAM Review</em> 25 (1): 35–61. <a href="https://doi.org/10.1137/1025002">https://doi.org/10.1137/1025002</a>.
+</div>
+<div id="ref-mignone2007pluto" class="csl-entry" role="listitem">
+Mignone, Andrea, Gianluigi Bodo, Silvano Massaglia, Titos Matsakos, Ovidiu Tesileanu, Claudio Zanni, and Attilio Ferrari. 2007. <span>“PLUTO: A Numerical Code for Computational Astrophysics.”</span> <em>The Astrophysical Journal Supplement Series</em> 170 (1): 228. <a href="https://doi.org/10.1086/513316">https://doi.org/10.1086/513316</a>.
+</div>
+<div id="ref-orszag1979small" class="csl-entry" role="listitem">
+Orszag, Steven A, and CM Tang. 1979. <span>“Small-Scale Structure of Two-Dimensional Magnetohydrodynamic Turbulence.”</span> <em>Journal of Fluid Mechanics</em> 90 (1): 129–43. <a href="https://doi.org/10.1017/S002211207900210X">https://doi.org/10.1017/S002211207900210X</a>.
+</div>
+<div id="ref-priest2014magnetohydrodynamics" class="csl-entry" role="listitem">
+Priest, Eric. 2014. <em>Magnetohydrodynamics of the Sun</em>. Cambridge University Press. <a href="https://doi.org/10.1017/CBO9781139020732">https://doi.org/10.1017/CBO9781139020732</a>.
+</div>
+<div id="ref-pydantic" class="csl-entry" role="listitem">
+Pydantic Contributors. 2024. <span>“Pydantic: Data Validation Using Python Type Hints.”</span> <a href="https://docs.pydantic.dev/" class="uri">https://docs.pydantic.dev/</a>.
+</div>
+<div id="ref-sod1978survey" class="csl-entry" role="listitem">
+Sod, Gary A. 1978. <span>“A Survey of Several Finite Difference Methods for Systems of Nonlinear Hyperbolic Conservation Laws.”</span> <em>Journal of Computational Physics</em> 27 (1): 1–31. <a href="https://doi.org/10.1016/0021-9991(78)90023-2">https://doi.org/10.1016/0021-9991(78)90023-2</a>.
+</div>
+<div id="ref-stone2020athena" class="csl-entry" role="listitem">
+Stone, James M, Kengo Tomida, Christopher J White, and Kyle G Felker. 2020. <span>“Athena++: A High-Performance AMR MHD Code for Astrophysics.”</span> <em>The Astrophysical Journal Supplement Series</em> 249 (1): 4. <a href="https://doi.org/10.3847/1538-4365/ab929b">https://doi.org/10.3847/1538-4365/ab929b</a>.
+</div>
+<div id="ref-hdf5" class="csl-entry" role="listitem">
+The HDF Group. 2024. <span>“Hierarchical Data Format, Version 5.”</span> <a href="https://www.hdfgroup.org/HDF5/" class="uri">https://www.hdfgroup.org/HDF5/</a>.
+</div>
+</div></section><section class="quarto-appendix-contents" id="quarto-reuse"><h2 class="anchored quarto-appendix-heading">Reuse</h2><div class="quarto-appendix-contents"><div>Apache-2.0</div></div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
