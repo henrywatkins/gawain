@@ -16,7 +16,7 @@ authors:
 affiliations:
  - name: Department of Physics and Astronomy, Imperial College London, UK
    index: 1
-date: 18 December 2025
+date: 11 February 2026
 bibliography: paper.bib
 
 # Software metadata
@@ -29,11 +29,9 @@ license: Apache-2.0
 Gawain is a Python package for solving the equations of magnetohydrodynamics (MHD) in two and three spatial dimensions. The package provides a flexible framework for simulating inviscid, compressible hydrodynamics and ideal MHD using finite volume methods with various flux calculation schemes. Gawain is designed with simplicity and accessibility in mind, featuring a straightforward configuration-based interface that allows users to set up and run simulations with minimal code. The package supports both CPU (NumPy) and GPU (CuPy) backends, enabling acceleration of computationally intensive simulations on modern hardware. With comprehensive Pydantic-based validation, multiple boundary condition types, and support for external forces and source terms, Gawain serves as both an educational tool for learning computational MHD and a research platform for exploring plasma physics phenomena.
 
 
-# Statement of Need and Prior Art
+# Statement of Need
 
-Magnetohydrodynamics describes the behavior of electrically conducting fluids in the presence of magnetic fields, with applications spanning solar physics, astrophysical jets, accretion disks, fusion plasma confinement, and space weather modeling [@priest2014magnetohydrodynamics; @goedbloed2019magnetohydrodynamics]. While several mature MHD simulation codes exist—such as ATHENA++ [@stone2020athena], PLUTO [@mignone2007pluto], and FLASH [@fryxell2000flash]—these production-level codes often present significant barriers to entry for students and researchers new to computational MHD. They typically require compilation, complex configuration files, and substantial investment in learning domain-specific workflows.
-
-Gawain addresses this gap by providing a Python-native MHD solver that prioritizes accessibility without sacrificing physical fidelity. The package leverages Python's scientific computing ecosystem (NumPy, h5py, matplotlib) to offer an environment familiar to researchers already working with Python for data analysis. Unlike production codes optimized for massively parallel supercomputing, Gawain targets educational use cases, algorithm prototyping, and small-to-medium scale research problems that can run on workstations or cloud computing platforms.
+Magnetohydrodynamics describes the behavior of electrically conducting fluids in the presence of magnetic fields, with applications spanning solar physics, astrophysical jets, accretion disks, fusion plasma confinement, and space weather modeling [@priest2014magnetohydrodynamics; @goedbloed2019magnetohydrodynamics]. Gawain provides a Python-native MHD solver that prioritizes accessibility without sacrificing physical fidelity. Unlike production codes optimized for massively parallel supercomputing, Gawain targets educational use cases, algorithm prototyping, and small-to-medium scale research problems that can run on workstations or cloud computing platforms. The package leverages Python's scientific computing ecosystem (NumPy, h5py, matplotlib) to offer an environment familiar to researchers already working with Python for data analysis. 
 
 Key distinguishing features include:
 
@@ -44,27 +42,17 @@ Key distinguishing features include:
 
 The target audience includes graduate students learning computational plasma physics, researchers prototyping new numerical methods, and educators teaching MHD in computational physics courses. By lowering technical barriers, Gawain enables users to focus on physics rather than infrastructure.
 
-# Installation
+# State of the Field
 
-Gawain can be installed directly from the source repository:
+While several mature MHD simulation codes exist—such as ATHENA++ [@stone2020athena], PLUTO [@mignone2007pluto], and FLASH [@fryxell2000flash]—these production-level codes often present significant barriers to entry for students and researchers new to computational MHD. Other codes that include MHD solvers like OpenFOAM [@jasak2007openfoam] or COMSOL [@pryor2009multiphysics] are targeted towards industrial applications rather than academic physics studies. They typically require compilation, complex configuration files, and substantial investment in learning domain-specific workflows. Production level codes are mature, with a large codebase that makes experimenting with new additions or models difficult.
 
-```bash
-git clone https://github.com/henrywatkins/gawain.git
-cd gawain
-pip install -e .
-```
+# Research Impact Statement
 
-For GPU acceleration, install the optional CuPy dependency:
+This software grew out of a project in laser-plasma physics [@watkins2018magnetised], where the deficiencies of mature C++ and FORTRAN codes motivated the need for alternative, python-based codes for projects in extended models and experimenting with new algoithms. Further projects on magnetised transport [@bell2020instability] needed features unavailable in extant codes and the means to quickly introduce new PhD students to building, developing, testing and understanding plasma physics codes. 
 
-```bash
-pip install -e ".[gpu]"
-```
+# Software Design
 
-The package requires Python ≥3.12 and has minimal core dependencies (NumPy, h5py, Pydantic, matplotlib). Installation typically completes in under 5 minutes on a standard workstation.
-
-
-
-# Governing Equations
+## Governing Equations
 
 Gawain solves the conservative form of the ideal MHD equations in Cartesian coordinates:
 
@@ -86,7 +74,7 @@ $$
 
 The total energy includes magnetic pressure: $E = \frac{p}{\gamma - 1} + \frac{1}{2}\rho|\mathbf{v}|^2 + \frac{1}{2}|\mathbf{B}|^2$, where $\gamma$ is the adiabatic index and $p$ is thermal pressure. The source term $\mathbf{S}$ can include gravitational forces or user-defined source functions.
 
-# Implementation
+## Implementation
 
 Gawain employs a finite volume method with explicit time integration. The spatial domain is discretized into a structured Cartesian grid, with conserved quantities stored at cell centers. Numerical fluxes at cell interfaces are computed using one of several Riemann solvers:
 
@@ -103,75 +91,23 @@ Configuration validation using Pydantic [@pydantic] ensures type safety and catc
 
 Gawain's design prioritizes rapid onboarding: new users can configure and run their first simulation within 10 minutes following the example scripts.
 
-
-# Features
-
-### Simulation Capabilities
+## Simulation Capabilities
 - **Dimensionality**: Supports 1D, 2D, and 3D simulations (lower dimensions implemented as degenerate 3D cases)
 - **Physics**: Inviscid compressible hydrodynamics and ideal MHD
 - **Flux schemes**: Base, Lax-Friedrichs, Lax-Wendroff, and HLL solvers
 - **Time integration**: Forward Euler with CFL-based adaptive timestepping
 - **Boundary conditions**: Periodic, fixed-value, reflective, and outflow (independently configurable per axis)
 
-### Computational Features
+## Computational Features
 - **GPU acceleration**: Optional CuPy backend for CUDA-compatible GPUs (controlled via `GAWAIN_USE_GPU` environment variable)
 - **Validation**: Comprehensive Pydantic-based input validation with informative error messages
 - **Output format**: HDF5 files with configurable dump frequency
 - **Source terms**: Support for gravitational fields and arbitrary source functions
 
-### Development and Testing
+## Development and Testing
 - **Examples**: 13 validated test cases including Sod shock tube, Brio-Wu shock, Orszag-Tang vortex, Sedov blast wave, Rayleigh-Taylor instability, Kelvin-Helmholtz instability, MHD rotor, Alfvén waves, and current sheet instabilities
 - **Jupyter integration**: Example notebooks demonstrating simulation setup and visualization
 - **Test coverage**: Unit tests for all core components (numerics, fluxes, I/O, validation)
-
-# Example Usage
-
-Gawain simulations are configured using Python dictionaries, making setup straightforward. The following example demonstrates a 1D Sod shock tube problem [@sod1978survey], a standard hydrodynamics test:
-
-```python
-import numpy as np
-from gawain.main import run_gawain
-
-# Mesh setup (1D simulation using 3D array with ny=nz=1)
-nx, ny, nz = 200, 1, 1
-lx, ly, lz = 1.0, 0.001, 0.001
-x = np.linspace(0.0, lx, num=nx)
-y = np.linspace(0.0, ly, num=ny)
-z = np.linspace(0.0, lz, num=nz)
-X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
-
-# Initial conditions: discontinuity at x=0.5
-rho = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.125])
-pressure = np.piecewise(X, [X < 0.5, X >= 0.5], [1.0, 0.1])
-mx = my = mz = np.zeros(X.shape)
-
-# Total energy (kinetic + thermal)
-gamma = 1.4
-e = pressure / (gamma - 1) + 0.5 * mx**2 / rho
-initial_condition = np.array([rho, mx, my, mz, e])
-
-# Configuration dictionary
-config = {
-    "run_name": "sod_shock_tube",
-    "cfl": 0.25,
-    "mesh_shape": (nx, ny, nz),
-    "mesh_size": (lx, ly, lz),
-    "mesh_grid": (X, Y, Z),
-    "t_max": 0.25,
-    "n_dumps": 100,
-    "initial_condition": initial_condition,
-    "boundary_type": ["fixed", "periodic", "periodic"],
-    "adi_idx": gamma,
-    "integrator": "euler",
-    "fluxer": "hll",
-    "output_dir": "runs",
-    "with_mhd": False,
-}
-
-run_gawain(config)
-```
-
-This produces an HDF5 file containing 100 snapshots of the evolving shock structure. For MHD simulations, users simply add magnetic field components to the initial condition array and set `with_mhd=True`. GPU acceleration requires only setting the environment variable `GAWAIN_USE_GPU=1` before execution—no code changes needed.
 
 The `examples/` directory contains additional test cases including 2D MHD problems (Orszag-Tang vortex, MHD rotor, current sheet instabilities) and 3D blast wave simulations, along with Jupyter notebooks demonstrating visualization workflows using matplotlib.
 
@@ -187,12 +123,12 @@ The validation suite includes 13 test cases spanning canonical hydrodynamics pro
 
 GPU acceleration with CuPy provides significant speedup for typical problems on CUDA-compatible or AMD hardware, with gains increasing at higher resolutions where computation dominates data transfer overhead. The modular architecture allows users to extend functionality through subclassing (e.g., implementing new flux schemes) or adding custom source terms. The test suite (`pytest`-based) ensures modifications maintain correctness.
 
-# Generative AI Disclosure
+# AI Usage Disclosure
 
 Generative AI tools were used to assist with code development and draft paper preparation, primarily using Claude Sonnet 4.5 via github Copilot. Claude code was also used for testing and code review. All AI-generated content was thoroughly reviewed, edited, and validated by the human author. The author takes full responsibility for the accuracy, originality, and compliance with all licensing and ethical standards of the final software and manuscript.
 
 # Acknowledgments
 
-We acknowledge contributions from the open-source Python scientific computing community, particularly the developers of NumPy, CuPy, h5py, and Pydantic, which form the foundation of Gawain's implementation.
+We acknowledge contributions from the open-source Python scientific computing community, particularly the developers of NumPy, CuPy, h5py, and Pydantic.
 
 # References
